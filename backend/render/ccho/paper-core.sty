@@ -1,0 +1,57 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{paper-core}[2026/10/22 Style-independent examination components]
+\@ifundefined{PaperLeft}{\PackageError{paper-core}{Missing layout profile}{Use paper_ops.py build --style <id>.}}{}
+\RequirePackage{geometry}
+\@ifundefined{PaperPaperSize}{}{\expandafter\geometry\expandafter{\PaperPaperSize}}
+\geometry{left=\PaperLeft mm,right=\PaperRight mm,top=\PaperTop mm,bottom=\PaperBottom mm,footskip=\PaperFootskip mm}
+\RequirePackage{amsmath,amssymb,fancyhdr,lastpage,needspace,array,xcolor,tabularx,longtable,graphicx}
+\providecommand{\PaperFontScheme}{newtx}
+\def\paper@fudanfont{fudan}
+\ifx\PaperFontScheme\paper@fudanfont\else\RequirePackage{newtxtext,newtxmath,microtype}\fi
+\definecolor{paperanswer}{RGB}{\PaperAnswerRGB}
+\definecolor{paperprompt}{RGB}{\PaperPromptRGB}
+\providecommand{\PaperMode}{questions}
+\def\paper@answers{answers}
+\newif\ifpaper@solutions
+\ifx\PaperMode\paper@answers\paper@solutionstrue\else\paper@solutionsfalse\fi
+\pagestyle{fancy}\fancyhf{}
+\fancyfoot[C]{\small 第 \thepage 页，共 \pageref{LastPage} 页}
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\parindent}{0pt}\setlength{\parskip}{2pt}\linespread{\PaperLineSpread}
+\raggedbottom
+\clubpenalty=8000\widowpenalty=8000\displaywidowpenalty=8000
+\setlength{\abovedisplayskip}{5pt}\setlength{\belowdisplayskip}{5pt}
+\setlength{\abovedisplayshortskip}{3pt}\setlength{\belowdisplayshortskip}{4pt}
+\newcommand{\PaperTitle}[2]{\begin{center}{\bfseries\fontsize{\PaperTitlePt}{22}\selectfont #1}\if\relax\detokenize{#2}\relax\else\par\vspace{4pt}{\fontsize{11}{16}\selectfont #2}\fi\end{center}\vspace{-3pt}}
+\newcommand{\PaperAnswerHeading}{\ifpaper@solutions\par\vspace{4pt}\begingroup\centering\color{paperprompt}\bfseries\fontsize{14}{19}\selectfont 参考答案\par\endgroup\vspace{6pt}\fi}
+\newcommand{\PaperLead}[1]{\par\noindent\hspace*{2em}#1\par}
+\newcommand{\PaperNote}[2]{\par\noindent\textbf{#1：}\enspace #2\par}
+\newcommand{\PaperContinue}[1]{\par\noindent{\small 第 #1 题（续）}\par\nobreak}
+\newcommand{\PaperSection}[3]{\par\addvspace{9pt}\Needspace{58pt}\noindent\textbf{第 #1 \PaperSectionWord\quad #2\enspace #3}\par\nobreak\vspace{1pt}}
+\newcommand{\PaperQuestion}[3][65pt]{\par\addvspace{6pt}\Needspace{#1}\noindent\textbf{#2}\enspace #3\par\nobreak}
+\newcommand{\PaperBlank}[1][26mm]{\underline{\hspace{#1}}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\PaperOptionsFour}[4]{\par\vspace{2pt}\noindent\begin{tabularx}{\linewidth}{@{}YYYY@{}}(A)~#1&(B)~#2&(C)~#3&(D)~#4\end{tabularx}\par}
+\newcommand{\PaperOptionsTwo}[4]{\par\vspace{2pt}\noindent\begin{tabularx}{\linewidth}{@{}YY@{}}(A)~#1&(B)~#2\\[5pt](C)~#3&(D)~#4\end{tabularx}\par}
+\newcommand{\PaperOptionsOne}[4]{\par\noindent(A)~#1\par(B)~#2\par(C)~#3\par(D)~#4\par}
+\NewDocumentCommand{\PaperFigure}{O{} +m}{\par\addvspace{4pt}\begingroup\centering #2\par\if\relax\detokenize{#1}\relax\else{\small #1\par}\fi\endgroup\addvspace{4pt}}
+% Data tables may span pages: supply a longtable preamble and explicit repeat heads.
+\newenvironment{paperdatatable}[1]{\par\begingroup\color{black}\setlength{\arrayrulewidth}{0.35pt}\renewcommand{\arraystretch}{1.16}\setlength{\LTpre}{4pt}\setlength{\LTpost}{4pt}\begin{longtable}{#1}}{\end{longtable}\endgroup}
+% Answer grids contain only short answers. Each row can choose its own cell count.
+% The entire body is suppressed in question mode, including its TeX side effects.
+\NewDocumentEnvironment{paperanswergrid}{+b}{\ifpaper@solutions\par\addvspace{4pt}\begingroup\setlength{\parskip}{0pt}\setlength{\tabcolsep}{5pt}\setlength{\arrayrulewidth}{0.35pt}\renewcommand{\arraystretch}{1.12}#1\par\endgroup\addvspace{5pt}\fi}{}
+\NewDocumentCommand{\PaperAnswerRow}{m +m}{\par\noindent\begin{tabularx}{\linewidth}{|*{#1}{Y|}}\hline #2\\\hline\end{tabularx}\par\vspace{-\arrayrulewidth}}
+\newcommand{\PaperAnswerCell}[3]{\PaperRecordSolution\textcolor{black}{\textbf{#1}}\par\nobreak\textcolor{paperprompt}{#2}\enspace\textcolor{paperanswer}{答案：#3}}
+\NewDocumentEnvironment{paperanalysis}{+b}{\ifpaper@solutions\par\begingroup\color{paperanswer}\noindent\textbf{解析：}#1\par\endgroup\fi}{}
+\NewDocumentEnvironment{papersolution}{m +b}{\ifpaper@solutions\par\begingroup\color{paperanswer}\noindent\textbf{答案：}#1\par\nobreak\noindent\textbf{解析：}#2\par\endgroup\addvspace{3pt}\fi}{}
+
+\AtBeginDocument{\fontsize{\PaperBodyPt}{16}\selectfont}
+\NewDocumentCommand{\PaperIfQuestions}{+m}{\ifpaper@solutions\else#1\fi}
+\NewDocumentCommand{\PaperIfAnswers}{+m}{\ifpaper@solutions#1\fi}
+
+% Nonprinting semantic events bind native/repeated labels and solution starts to the PDF build.
+\providecommand{\PaperAuditQuestion}[1]{}
+\providecommand{\PaperAuditSolution}[1]{}
+\newcommand{\PaperRecordQuestion}[1]{\immediate\write\@auxout{\string\PaperAuditQuestion{#1}}}
+\newcommand{\PaperRecordSolution}{\immediate\write\@auxout{\string\PaperAuditSolution{solution}}}
+\@ifundefined{PaperStyleExtension}{}{\RequirePackage{\PaperStyleExtension}}

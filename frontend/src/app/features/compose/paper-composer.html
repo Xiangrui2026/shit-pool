@@ -1,0 +1,91 @@
+<header class="intro">
+  <p class="eyebrow">PAPER WORKSPACE</p>
+  <h1>本地组卷</h1>
+  <p>从题库或套题选题，排好顺序后，一键生成 CChO 风格试卷。</p>
+</header>
+
+@let paper = draft.value();
+<div class="workspace">
+  <section class="panel" aria-labelledby="draft-heading">
+    <div class="panel-heading">
+      <div><p class="eyebrow">01 / 草稿</p><h2 id="draft-heading">试卷编辑</h2></div>
+      <span class="pill">{{ paper.items.length }} / {{ limit }} 题</span>
+    </div>
+    <form (submit)="submit($event)">
+      <label class="field">
+        <span>试卷名称</span>
+        <input name="paper-title" type="text" maxlength="120" required placeholder="例如：化学竞赛周练"
+          [value]="paper.title" (input)="draft.rename($any($event.target).value)" />
+      </label>
+      @if (paper.items.length) {
+        <ol class="questions">
+          @for (item of paper.items; track item.id; let index = $index) {
+            <li>
+              <div class="question-heading">
+                <div class="question-caption">
+                  <strong>第 {{ index + 1 }} 题</strong>
+                  <span>{{ item.source }} · ID {{ item.id }}</span>
+                </div>
+                <div class="controls">
+                  <button type="button" [disabled]="index === 0" (click)="draft.move(index, -1)" [attr.aria-label]="'上移题目 ' + item.id">↑</button>
+                  <button type="button" [disabled]="index === paper.items.length - 1" (click)="draft.move(index, 1)" [attr.aria-label]="'下移题目 ' + item.id">↓</button>
+                  <button type="button" (click)="draft.remove(item.id)" [attr.aria-label]="'移除题目 ' + item.id">移除</button>
+                </div>
+              </div>
+              <details>
+                <summary>预览题干</summary>
+                <app-latex-content [source]="item.stem" />
+              </details>
+            </li>
+          }
+        </ol>
+      } @else {
+        <div class="empty">
+          <strong>试卷还没有题目</strong>
+          <p>在题目详情点击「加入组卷」，或从套题一次加入整套。</p>
+          <a routerLink="/">去查题</a><a routerLink="/papers">浏览套题</a>
+        </div>
+      }
+      @if (draft.storageFailed()) {
+        <p class="error" role="alert">浏览器未能保存草稿或任务记录，请勿关闭页面。</p>
+      }
+      @if (submitError()) { <p class="error" role="alert">{{ submitError() }}</p> }
+      <div class="form-footer">
+        <p>草稿只保存在此浏览器。送排时使用题库里的最新题干和默认解答。</p>
+        <button class="primary" type="submit" [disabled]="!canSubmit()">{{ sending() ? '正在提交…' : '送排 · 生成 PDF' }}</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel jobs" aria-labelledby="jobs-heading">
+    <div class="panel-heading">
+      <div><p class="eyebrow">02 / 取件</p><h2 id="jobs-heading">排版记录</h2></div>
+      @if (paper.jobs.length) { <button class="refresh" type="button" (click)="refresh()">刷新</button> }
+    </div>
+    <p class="hint">仅在本机记录，PDF 可取件 24 小时。知道任务 ID 的人可以下载。</p>
+    <ul class="job-list">
+      @for (job of paper.jobs; track job.id) {
+        @let state = states()[job.id];
+        @let detail = result(state);
+        <li>
+          <div class="job-heading"><strong>{{ job.title }}</strong><span class="pill" role="status">{{ label(state) }}</span></div>
+          @if (detail && detail.status === 'completed') {
+            <div class="links">
+              <a [href]="download(job.id, 'questions')" download>题目 PDF</a>
+              @if (detail.has_answers) { <a [href]="download(job.id, 'answers')" download>参考答案 PDF</a> }
+            </div>
+          } @else if (detail && detail.status === 'failed') {
+            <p class="error">{{ errorLabel(detail.error) }}</p>
+          }
+          <details class="job-meta">
+            <summary>任务 ID</summary>
+            <code>{{ job.id }}</code>
+            <button class="refresh" type="button" (click)="draft.forget(job.id)">移除本地记录</button>
+          </details>
+        </li>
+      } @empty {
+        <li class="hint">送排后可在这里查看进度并下载成品。</li>
+      }
+    </ul>
+  </section>
+</div>

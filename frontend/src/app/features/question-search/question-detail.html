@@ -1,0 +1,73 @@
+<dialog #detail aria-labelledby="question-detail-title" (close)="closed()">
+  <header class="header">
+    <div>
+      <p class="overline">QUESTION DETAILS</p>
+      <h2 id="question-detail-title">题目详情</h2>
+    </div>
+    <div class="actions">
+      @if (question(); as item) {
+        <button class="download" type="button" [disabled]="exporting()" (click)="download(item)">
+          <svg aria-hidden="true"><use href="icons.svg#download" /></svg> {{ exporting() ? '正在打包…' : '下载 TeX ZIP' }}
+        </button>
+      }
+      <button class="close" type="button" aria-label="关闭题目详情" autofocus (click)="close()">
+        <svg aria-hidden="true"><use href="icons.svg#close" /></svg>
+      </button>
+    </div>
+  </header>
+
+  @if (question(); as item) {
+    <div class="body">
+      @if (exportError()) { <p class="export-error" role="alert">{{ exportError() }}</p> }
+      <div class="compose-action">
+        <button class="retry" type="button" [disabled]="addedToDraft() || draftFull()" (click)="draft.add(item)">
+          {{ addedToDraft() ? '已加入组卷' : draftFull() ? '草稿已满' : '加入组卷' }}
+        </button>
+        @if (draft.storageFailed()) { <span role="alert">草稿未能写入浏览器存储。</span> }
+      </div>
+      <dl class="meta">
+        <div><dt>题目 ID</dt><dd><code class="question-id">{{ item.id }}</code></dd></div>
+        <div><dt>分类</dt><dd>{{ item.category }}</dd></div>
+        <div><dt>来源</dt><dd>{{ item.source }}</dd></div>
+        <div><dt>原题号</dt><dd>{{ item.original_number == null ? '未标记' : '第 ' + item.original_number + ' 题' }}</dd></div>
+        @if (item.tags) {
+          <div>
+            <dt>标签</dt>
+            <dd>
+              <ul class="tags">
+                @for (tag of item.tags.split(','); track $index) { <li>{{ tag }}</li> }
+              </ul>
+            </dd>
+          </div>
+        }
+      </dl>
+      <section class="block" aria-labelledby="question-stem-title">
+        <h3 id="question-stem-title">题干</h3>
+        <app-latex-content [source]="item.stem" />
+      </section>
+      <section aria-labelledby="question-answer-title" class="solutions">
+        <h3 id="question-answer-title">解答 @if (solutions()?.length; as count) { <span class="answer-count">{{ count }} 种</span> }</h3>
+        @if (solutionError()) {
+          <p class="export-error" role="alert">暂时无法读取解答。 <button class="retry" type="button" (click)="loadSolutions(item.id)">重试</button></p>
+        } @else if (solutions(); as entries) {
+          @for (solution of entries; track solution.id) {
+            <article class="block answer">
+              <h4>{{ solution.title }} @if (solution.is_default) { <span class="default-answer">默认</span> }</h4>
+              <app-latex-content [source]="solution.body" />
+            </article>
+          } @empty {
+            <p class="notes">暂未录入解答。</p>
+          }
+        } @else {
+          <p class="notes" role="status">正在加载解答…</p>
+        }
+      </section>
+      @if (item.notes) {
+        <section class="block" aria-labelledby="question-notes-title">
+          <h3 id="question-notes-title">备注</h3>
+          <p class="notes">{{ item.notes }}</p>
+        </section>
+      }
+    </div>
+  }
+</dialog>

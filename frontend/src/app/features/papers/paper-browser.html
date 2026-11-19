@@ -1,0 +1,100 @@
+<header class="hero">
+  <div>
+    <p class="eyebrow"><span></span> SHIT BANK / PAPERS</p>
+    <h1>套题</h1>
+    <p>按来源查看已收录的整套试题，按原题顺序练习。</p>
+  </div>
+  <div class="hero-mark" aria-hidden="true">
+    <svg><use href="icons.svg#layers" /></svg>
+  </div>
+</header>
+
+<div class="paper-layout">
+  <aside class="panel catalog" aria-labelledby="paper-sources">
+    <div class="catalog-head">
+      <p class="eyebrow">SOURCE INDEX</p>
+      <h2 id="paper-sources">试卷来源</h2>
+      <label class="filter">
+        <svg aria-hidden="true"><use href="icons.svg#search" /></svg>
+        <input #lookup type="search" aria-label="搜索试卷来源" placeholder="搜索来源名称" (input)="filter.set(lookup.value)" />
+      </label>
+    </div>
+    @let list = catalog();
+    @switch (list.status) {
+      @case ('loading') { <p class="status" role="status">正在载入试卷来源…</p> }
+      @case ('error') {
+        <p class="status" role="status">试卷来源加载失败。 <button type="button" (click)="retryCatalog()">重试</button></p>
+      }
+      @case ('ready') {
+        @if (visiblePapers().length) {
+          <nav aria-label="选择试卷来源">
+            @for (paper of visiblePapers(); track paper.source) {
+              <a routerLink="/papers" [queryParams]="{ source: paper.source }" fragment="paper-preview"
+                [attr.aria-current]="source() === paper.source ? 'page' : null">
+                <span>{{ paper.source }}</span><small aria-label="题目数量">{{ paper.question_count }}</small>
+              </a>
+            }
+          </nav>
+        } @else {
+          <p class="status">{{ list.data.length ? '没有匹配的试卷来源。' : '暂无已收录试卷。' }}</p>
+        }
+      }
+    }
+  </aside>
+
+  <section id="paper-preview" class="preview" tabindex="-1" aria-label="套题内容">
+    @if (source(); as name) {
+      @let selected = paper();
+      <header class="preview-head">
+        <div>
+          <p class="eyebrow">QUESTION SET</p>
+          <h2>{{ name }}</h2>
+          @if (selected && selected.status === 'ready') {
+            <p class="preview-meta">已收录 {{ selected.data.length }} 道 · 按原题号排列</p>
+          }
+        </div>
+        @if (selected && selected.status === 'ready') {
+          <button class="compose-paper" type="button" (click)="composePaper(name, selected.data)">
+            整套加入组卷 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+          </button>
+        }
+      </header>
+      @if (selected && selected.status === 'ready') {
+        @if (blockedSource() === name) {
+          <p class="panel message compose-limit" role="alert">
+            整套加入后会超过 {{ paperLimit }} 题上限，本次没有添加。可先<a routerLink="/compose">调整草稿</a>，或逐题选择。
+          </p>
+        }
+        <ol class="question-list">
+          @for (question of selected.data; track question.id) {
+            <li class="panel question">
+              <div class="question-meta">
+                <span class="number">{{ question.original_number === null ? '未标记题号' : '第 ' + question.original_number + ' 题' }}</span>
+                <span>ID {{ question.id }}</span>
+                <span>{{ question.category }}</span>
+              </div>
+              <app-latex-content [source]="question.stem" />
+              <button class="details" type="button" aria-haspopup="dialog" [attr.aria-label]="'查看题目 ' + question.id + ' 详情'" (click)="detail.open(question)">
+                查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+              </button>
+            </li>
+          }
+        </ol>
+      } @else if (selected && selected.status === 'missing') {
+        <p class="panel message" role="status">这个来源没有可见题目。请从来源列表选择其他试卷。</p>
+      } @else if (selected && selected.status === 'error') {
+        <p class="panel message" role="status">套题加载失败。 <button type="button" (click)="retryPaper()">重试</button></p>
+      } @else {
+        <p class="panel message" role="status">正在载入该来源的全部题目…</p>
+      }
+    } @else {
+      <div class="panel empty">
+        <span aria-hidden="true"><svg><use href="icons.svg#layers" /></svg></span>
+        <h2>选择一套试题</h2>
+        <p>选择一个来源，即可查看该试卷已收录的全部题目。未标记题号的题排在最后。</p>
+      </div>
+    }
+  </section>
+</div>
+
+<app-question-detail #detail />

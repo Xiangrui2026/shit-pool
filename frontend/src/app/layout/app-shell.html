@@ -1,0 +1,16 @@
+<a class="skip-link" href="#main-content" (click)="skip($event, main)">跳至主要内容</a>
+<header class="masthead">
+  <div class="masthead-inner">
+    <a class="brand" routerLink="/" aria-label="SHIT-Pool 石库首页">
+      <img src="mark.svg" width="38" height="38" alt="" />
+      <span><strong>SHIT-Pool 石库</strong><small>SHIT BANK</small></span>
+    </a>
+    <nav class="masthead-nav" aria-label="主导航">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">题库检索</a>
+      <a routerLink="/papers" routerLinkActive="active" ariaCurrentWhenActive="page">套题</a>
+      <a routerLink="/compose" routerLinkActive="active" ariaCurrentWhenActive="page">组卷</a>
+    </nav>
+  </div>
+</header>
+<main #main id="main-content" tabindex="-1"><router-outlet /></main>
+<footer class="footer"><span>SHIT-Pool 石库</span><span>SHIT BANK</span></footer>

@@ -1,0 +1,34 @@
+<fieldset class="tag-panel">
+  <legend>标签筛选 <span class="multi-label">多选</span></legend>
+  <div class="tag-controls">
+    <div class="match" role="radiogroup" aria-label="标签匹配方式">
+      <label>
+        <input type="radio" name="tag-match" [checked]="mode() === 'any'" (change)="modeChanged.emit('any')" />
+        <span>任一匹配 <small>OR</small></span>
+      </label>
+      <label>
+        <input type="radio" name="tag-match" [checked]="mode() === 'all'" (change)="modeChanged.emit('all')" />
+        <span>全部匹配 <small>AND</small></span>
+      </label>
+    </div>
+    @if (selected().length) {
+      <button class="clear" type="button" (click)="cleared.emit()">清除已选（{{ selected().length }}）</button>
+    }
+  </div>
+  @if (state() === 'loading') {
+    <p class="hint" role="status">正在加载标签…</p>
+  } @else if (state() === 'error') {
+    <p class="hint" role="status">无法加载标签。 <button type="button" class="clear" (click)="retry.emit()">重试</button></p>
+  } @else if (!tags().length) {
+    <p class="hint">暂无标签</p>
+  } @else {
+    <div class="tag-list">
+      @for (tag of tags(); track tag.name) {
+        <label class="tag">
+          <input type="checkbox" [checked]="selected().includes(tag.name)" (change)="toggled.emit(tag.name)" />
+          <span>{{ tag.name }} <small aria-hidden="true">{{ tag.question_count }}</small></span>
+        </label>
+      }
+    </div>
+  }
+</fieldset>

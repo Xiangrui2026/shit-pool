@@ -1,0 +1,32 @@
+<aside class="panel" aria-labelledby="category-heading">
+  <div class="heading">
+    <p>CATEGORIES</p>
+    <h2 id="category-heading">题目分类</h2>
+  </div>
+  <ul class="categories">
+    <li>
+      <button type="button" [attr.aria-pressed]="selected() === null" (click)="changed.emit(null)">
+        <svg aria-hidden="true"><use href="icons.svg#layers" /></svg>
+        <span>全部分类</span>
+        @if (state() === 'ready') { <span class="count">{{ total() }}</span> }
+      </button>
+    </li>
+    @for (category of categories(); track category.id) {
+      <li>
+        <button type="button" [attr.aria-pressed]="selected() === category.id"
+          (click)="changed.emit(category.id)">
+          <span class="dot" aria-hidden="true"></span>
+          <span>{{ category.name }}</span>
+          <span class="count">{{ category.question_count }}</span>
+        </button>
+      </li>
+    }
+  </ul>
+  @if (state() === 'loading') {
+    <p class="message" role="status">正在加载分类…</p>
+  } @else if (state() === 'error') {
+    <p class="message" role="status">无法加载分类。 <button class="text-button" type="button" (click)="retry.emit()">重试</button></p>
+  } @else if (!categories().length) {
+    <p class="message">暂无分类</p>
+  }
+</aside>

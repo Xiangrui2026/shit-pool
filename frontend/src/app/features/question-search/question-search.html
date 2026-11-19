@@ -1,0 +1,106 @@
+<section class="hero" aria-labelledby="query-title">
+  <div>
+    <p class="eyebrow"><span></span> SHIT BANK / DISCOVERY</p>
+    <h1 id="query-title">查石(SHIT)</h1>
+    <p class="intro">查找你需要赤的石，组卷或者直接赤掉。</p>
+  </div>
+  <img class="hero-art" src="workspace-art.svg" width="455" height="290" alt="" />
+</section>
+
+<div class="discovery">
+  <app-category-sidebar [categories]="categories()" [selected]="filters().category" [state]="categoryState()"
+    (changed)="selectCategory($event)" (retry)="loadCategories()" />
+
+  <div class="query-column">
+    <section class="surface filter-panel" aria-labelledby="filter-title">
+      <div class="filter-heading">
+        <div><p class="overline">REFINE SEARCH</p><h2 id="filter-title">检索条件</h2></div>
+        <button class="text-button" type="button" [disabled]="!activeFilters() && !draft().length"
+          (click)="reset(keyword)">重置条件</button>
+      </div>
+      <form class="search" role="search" (submit)="submit($event, keyword.value)">
+        <label class="keyword">
+          <span class="field-label">关键词 <small>题干 / 来源</small></span>
+          <span class="input-wrap">
+            <svg aria-hidden="true"><use href="icons.svg#search" /></svg>
+            <input #keyword type="search" maxlength="120" placeholder="输入题干片段或题目来源" (input)="draft.set(keyword.value)" />
+          </span>
+        </label>
+        <button class="primary" type="submit">检索</button>
+      </form>
+      <app-tag-filter [tags]="tags()" [selected]="filters().tags" [mode]="filters().tagMatch" [state]="tagState()"
+        (toggled)="toggleTag($event)" (modeChanged)="setTagMatch($event)" (cleared)="clearTags()" (retry)="loadTags()" />
+    </section>
+
+    <section class="results" aria-labelledby="results-title" [attr.aria-busy]="resultState() === 'loading'">
+      <div class="section-heading">
+        <div><p class="overline">SEARCH RESULTS</p><h2 id="results-title" #resultsHeading tabindex="-1">检索结果</h2></div>
+        @if (resultState() === 'ready') {
+          <span class="count" aria-live="polite">
+            共 {{ total() }} 道题 @if (total()) { · 第 {{ page() }} / {{ pageCount() }} 页 }
+          </span>
+        }
+      </div>
+
+      @if (filters().keyword || filters().category !== null || filters().tags.length) {
+        <p class="criteria">
+          <span>{{ categoryLabel() }}</span>
+          @if (filters().keyword) { <span>关键词：{{ filters().keyword }}</span> }
+          @if (filters().tags.length) {
+            <span>{{ filters().tags.length }} 个标签 · {{ filters().tagMatch === 'all' ? '全部匹配' : '任一匹配' }}</span>
+          }
+        </p>
+      }
+
+      @if (resultState() === 'error') {
+        <div class="surface state" role="status">
+          <p>暂时无法查询题库，请稍后重试。</p>
+          <button class="outline" type="button" (click)="runSearch(page())">重试</button>
+        </div>
+      } @else if (!items().length) {
+        <div class="surface state" role="status">
+          <span class="state-icon"><svg aria-hidden="true"><use href="icons.svg#layers" /></svg></span>
+          @if (resultState() === 'loading') {
+            <p>正在检索题目…</p>
+          } @else {
+            <p>没有找到符合条件的题目。试试调整关键词、分类或标签。</p>
+          }
+        </div>
+      }
+
+      @for (item of items(); track item.id) {
+        <article class="surface question">
+          <header class="question-meta">
+            <span class="category">{{ item.category }}</span>
+            <span class="source">来源：{{ item.source }}</span>
+          </header>
+          <app-latex-content class="stem" [source]="item.stem" />
+          @if (item.tags) {
+            <ul class="tags" aria-label="标签">
+              @for (tag of item.tags.split(','); track $index) {
+                <li>{{ tag }}</li>
+              }
+            </ul>
+          }
+          <button class="question-link" type="button" aria-haspopup="dialog"
+            [attr.aria-label]="'查看题目 ' + item.id + ' 详情，来源：' + item.source"
+            (click)="detail.open(item)">
+            查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+          </button>
+        </article>
+      }
+
+      @if (resultState() === 'ready' && pageCount() > 1) {
+        <nav class="pagination" aria-label="题目分页">
+          <button class="outline" type="button" [disabled]="page() === 1" (click)="goToPage(page() - 1)">上一页</button>
+          @for (number of visiblePages(); track number) {
+            <button class="outline page-number" type="button" [attr.aria-label]="'第 ' + number + ' 页'"
+              [attr.aria-current]="page() === number ? 'page' : null" (click)="goToPage(number)">{{ number }}</button>
+          }
+          <button class="outline" type="button" [disabled]="page() >= pageCount()" (click)="goToPage(page() + 1)">下一页</button>
+        </nav>
+      }
+    </section>
+  </div>
+</div>
+<app-question-detail #detail />

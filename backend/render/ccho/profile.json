@@ -1,0 +1,30 @@
+{
+  "id": "ccho",
+  "paper_size": "A4",
+  "name": "CChO 风格",
+  "description": "国初参考的紧凑试卷，黑题干、红解答、蓝表格提示。",
+  "numbering": "hierarchical",
+  "section_format": "question",
+  "body_pt": 11,
+  "title_pt": 16,
+  "line_spread": 1.18,
+  "margins_mm": {
+    "left": 19,
+    "right": 19,
+    "top": 26,
+    "bottom": 21,
+    "footskip": 9
+  },
+  "colors": {
+    "answer": [
+      224,
+      25,
+      25
+    ],
+    "prompt": [
+      28,
+      44,
+      158
+    ]
+  }
+}

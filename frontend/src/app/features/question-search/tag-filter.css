@@ -1,0 +1,23 @@
+:host { display: block; }
+.tag-panel { min-inline-size: 0; padding: 0; margin: 0; border: 0; }
+legend { padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 750; }
+.multi-label { margin-left: 5px; color: #6c578f; font-size: 11px; font-weight: 550; }
+.tag-controls, .tag-list { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.tag-controls { justify-content: space-between; }
+.match { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid #eee8f6; border-radius: 9px; background: #f7f4fb; }
+.match label, .tag { position: relative; cursor: pointer; min-width: 0; }
+.match input, .tag input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+.match span, .tag span { display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent; padding: 5px 8px; border-radius: 6px; font-size: 12px; color: #5b526f; }
+.match input:checked + span { background: #fff; border-color: #e5daf6; color: #523396; font-weight: 700; }
+.match input:focus-visible + span, .tag input:focus-visible + span { outline: 2px solid #8d74ff; outline-offset: 1px; }
+.match small { font-size: 9px; color: #725c9a; letter-spacing: .04em; }
+.tag-list { margin-top: 8px; padding: 4px 3px; max-height: 155px; overflow: auto; align-content: flex-start; }
+.tag span { border-color: #e8e2f0; border-radius: 20px; background: #fff; overflow-wrap: anywhere; }
+.tag span::before { content: '+'; width: 10px; flex: none; color: #7964a4; text-align: center; }
+.tag input:checked + span { border-color: #cbb6f4; background: #f1eaff; color: #50318e; }
+.tag input:checked + span::before { content: '✓'; }
+.tag small { color: #726583; font-size: 10px; }
+.tag:hover span { border-color: #cbb6f4; }
+.clear { border: 0; padding: 2px; background: none; color: var(--accent); font-size: 12px; cursor: pointer; }
+.clear:hover { text-decoration: underline; }
+.hint { margin: 11px 0 0; color: var(--muted); font-size: 12px; }
