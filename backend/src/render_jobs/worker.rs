@@ -161,7 +161,7 @@ impl ContainerEngine {
                 "--security-opt=no-new-privileges",
                 "--user=65534:65534",
                 "--pids-limit=64",
-                "--cpus=1",
+                "--cpus=0.75",
                 "--memory=512m",
                 "--memory-swap=512m",
                 "--log-driver=none",

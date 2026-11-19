@@ -49,12 +49,14 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          for component in web api; do
+          for component in web api worker ccho; do
+            target=()
             case "$component" in
               web) context=frontend ;;
-              api) context=backend ;;
+              api|worker) context=backend; target=(--target "$component") ;;
+              ccho) context=backend/render/ccho ;;
             esac
-            docker build --platform linux/amd64 \
+            docker build --platform linux/amd64 "${target[@]}" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               --label "org.opencontainers.image.revision=$IMAGE_TAG" \
               --tag "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG" "$context"
@@ -67,7 +69,8 @@ jobs:
           export SHIT_POOL_SITE=:80 SHIT_POOL_BIND_IP=127.0.0.1 SHIT_POOL_HTTP_PORT=18080 SHIT_POOL_HTTPS_PORT=18443
           POSTGRES_PASSWORD="$(openssl rand -hex 32)"
           SHIT_POOL_ADMIN_KEY="$(openssl rand -hex 32)"
-          export POSTGRES_PASSWORD SHIT_POOL_ADMIN_KEY
+          SHIT_POOL_DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
+          export POSTGRES_PASSWORD SHIT_POOL_ADMIN_KEY SHIT_POOL_DOCKER_GID
           compose() { docker compose -p shit-pool-ci -f compose.prod.yaml "$@"; }
           cleanup() {
             if [ "$1" -ne 0 ]; then compose logs --no-color; fi
@@ -80,20 +83,44 @@ jobs:
           curl --fail --silent --show-error --retry 5 --retry-connrefused "$base/compose" | grep -qi '<app-root'
           curl --fail --silent --show-error "$base/api/health" | jq -e '.database == "connected"'
           curl --fail --silent --show-error "$base/api/questions" | jq -e '.total == 0'
-          question='{"category":"CI","source":"CI","stem":"Example"}'
+          auth="Authorization: Bearer $SHIT_POOL_ADMIN_KEY"
+          image="$(printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMITdsNAAKKAXcM7H+jAAAAAElFTkSuQmCC' |
+            base64 --decode | curl --fail --silent --show-error --header "$auth" \
+              --header 'Content-Type: application/octet-stream' --data-binary @- "$base/api/images" | jq -er '.path')"
+          question="$(jq -nc --arg image "$image" \
+            '{category:"CI",source:"CI",stem:("Compute $1+1$.\n\n\\includegraphics[width=1cm]{" + $image + "}"),answer:"$2$."}')"
           status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
             --header 'Content-Type: application/json' --data "$question" "$base/api/questions")"
           test "$status" = 401
-          curl --fail --silent --show-error --header 'Content-Type: application/json' \
-            --header "Authorization: Bearer $SHIT_POOL_ADMIN_KEY" --data "$question" \
-            "$base/api/questions" | jq -e '.id > 0'
+          id="$(curl --fail --silent --show-error --header 'Content-Type: application/json' \
+            --header "$auth" --data "$question" "$base/api/questions" | jq -er '.id | select(. > 0)')"
+          job="$(jq -nc --argjson id "$id" '{title:"CChO 排版检查",question_ids:[$id]}' |
+            curl --fail --silent --show-error --header 'Content-Type: application/json' \
+              --data-binary @- "$base/api/render-jobs" | jq -er '.id | select(test("^[0-9a-f]{32}$"))')"
+          url="$base/api/render-jobs/$job"
+          status=queued
+          for attempt in $(seq 1 100); do
+            state="$(curl --fail --silent --show-error "$url")"
+            status="$(jq -er '.status' <<< "$state")"
+            case "$status" in
+              completed) break ;;
+              failed) jq -r '.error' <<< "$state" >&2; exit 1 ;;
+            esac
+            sleep 2
+          done
+          test "$status" = completed
+          for kind in questions answers; do
+            file="$RUNNER_TEMP/shit-pool-$kind.pdf"
+            curl --fail --silent --show-error "$url/files/$kind" --output "$file"
+            test "$(head -c 5 "$file")" = '%PDF-'
+          done
       - name: Push tested images to GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
-          for component in web api; do
+          for component in web api worker ccho; do
             docker push "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG"
           done
           printf 'Published linux/amd64 images tagged %s\n' "$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"

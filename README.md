@@ -68,13 +68,14 @@ npm.cmd start
 
 ## 生产部署（Linux x86-64）
 
-GitHub Actions 在 PR 和推送 `main` 时运行 Rust 测试与 Angular 构建。只有原仓库的 `main` 推送会构建生产镜像并验证生产 Compose，检查通过后发布 `linux/amd64` 的 `ghcr.io/xiangrui2026/shit-pool-web` 和 `ghcr.io/xiangrui2026/shit-pool-api`，两者使用同一个完整 Git 提交 SHA 作为标签。发布只使用工作流自动提供的 `GITHUB_TOKEN`，不需要 VPS 凭据，也不会自动部署。
+GitHub Actions 在 PR 和推送 `main` 时运行 Rust 测试与 Angular 构建。只有原仓库的 `main` 推送会构建并启动生产 Compose，送排一道带图和答案的测试题，确认两份 PDF 都可下载后，再发布 `linux/amd64` 的 `shit-pool-web`、`shit-pool-api`、`shit-pool-worker` 和 `shit-pool-ccho` 到 `ghcr.io/xiangrui2026`，使用同一个完整 Git 提交 SHA 作为标签。发布使用工作流自动提供的 `GITHUB_TOKEN`，不需要 VPS 凭据，也不会自动部署。
 
 VPS 需要 Docker Engine 与 Compose 插件。将域名指向 VPS，放行 TCP 80/443；Caddy 负责 HTTPS。把 `compose.prod.yaml` 和 `.env.production.example` 放在同一目录，复制示例为 `.env.production`（建议权限 `0600`），填写：
 
 - `IMAGE_TAG`：Actions 成功发布的完整提交 SHA。
 - `SHIT_POOL_SITE`：对外服务的域名（不带协议或路径）。
 - `POSTGRES_PASSWORD` 和 `SHIT_POOL_ADMIN_KEY`：分别生成两个不同的随机值，例如各执行一次 `openssl rand -hex 32`。不要提交配置文件或复用旧开发 Key。
+- `SHIT_POOL_DOCKER_GID`：在 VPS 上执行 `stat -c '%g' /var/run/docker.sock` 得到的数字。使用非默认 Docker socket 时，另设 `SHIT_POOL_DOCKER_SOCKET` 为实际路径，并读取对应文件的组 ID；Compose 与 worker 必须使用同一个 Docker daemon。
 
 如果 GHCR 包是私有的，VPS 需要先用具备 `read:packages` 权限的凭证登录 `ghcr.io`；公开包可以直接拉取。配置好后在 VPS 手动执行：
 
@@ -83,7 +84,11 @@ docker compose --env-file .env.production -f compose.prod.yaml pull
 docker compose --env-file .env.production -f compose.prod.yaml up -d --wait
 ```
 
-检查首页和 `/api/health`，确认返回 `database: "connected"`。只有 Caddy 发布端口；数据库、题图和 Caddy 证书使用独立持久卷。更新前将 PostgreSQL 和题图备份到另一台机器；不要用 `down -v` 停生产服务。可以保留旧镜像标签供回退，但回退镜像不会撤销迁移。此配置在 1 核 1 GB 上默认关闭在线 PDF 排版；本地组卷草稿与单题 TeX ZIP 仍可用。
+检查首页和 `/api/health`，确认返回 `database: "connected"`，再从网页送排一份带图的短卷。生产配置默认开启在线 PDF 排版；Compose 验证 XeLaTeX 镜像已加载后启动单个 worker。TeX 容器按任务启动，正常部署时 `renderer` 初始化服务显示退出码 `0`，不需要常驻。只有 Caddy 发布端口；数据库、题图、PDF 和 HTTPS 证书使用独立持久卷。
+
+只有受信任的 worker 挂载 Docker socket。访问 rootful Docker socket 等同于掌握宿主机高权限；不要把它挂给 Web、API 或 XeLaTeX 容器，也不要公开 Docker API。实际编译在禁网、只读根文件系统的非特权容器里，一次只跑一份，限制为 0.75 核、512 MiB，不挂载宿主目录或凭据。在 1 核 1 GB VPS 上应先用实际试卷验证耗时和内存余量，避免暴露不限量的匿名提交；应用已有队列容量和每日总量上限，公开使用时建议再配置按来源限流。若使用 Rootless Docker，确认 Linux cgroup v2、systemd 与 CPU、内存和进程数限制实际生效。
+
+更新前将 PostgreSQL 和题图备份到另一台机器；不要用 `down -v` 停生产服务。可以保留旧镜像标签供回退，但回退镜像不会撤销迁移。
 
 ## 本地组卷与排版
 
@@ -91,7 +96,7 @@ docker compose --env-file .env.production -f compose.prod.yaml up -d --wait
 2. 点「送排」后服务器一次读取题目、默认解答及题图引用，固定该次快照。参考答案沿用当前默认解答；缺个别答案时显示「未录入答案」，整卷无解答时只生成题目版。
 3. 不需要登录或管理 Key。任务 ID 即取件凭证；不要公开分享。没有服务器端任务列表，结果在完成后可下载 24 小时。
 
-排版默认关闭，不影响查询和本地草稿。启用时使用支持 Linux 容器的 Docker，构建本地镜像：
+直接运行开发后端时排版默认关闭，不影响查询和本地草稿；生产 Compose 已启用排版。若要手动启动开发排版，使用支持 Linux 容器的 Docker 构建本地镜像：
 
 ```powershell
 docker build -t shit-pool-ccho:1 backend/render/ccho

@@ -29,7 +29,8 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?Set a PostgreSQL password}
       DATABASE_MAX_CONNECTIONS: "3"
       SHIT_POOL_ADMIN_KEY: ${SHIT_POOL_ADMIN_KEY:?Set a private admin key}
-      SHIT_POOL_RENDER_ENABLED: "false"
+      SHIT_POOL_RENDER_ENABLED: "true"
+      SHIT_POOL_RENDER_DIR: /data/render
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health | grep -q '\"database\":\"connected\"'"]
       interval: 15s
@@ -38,9 +39,55 @@ services:
       start_period: 10s
     volumes:
       - images:/data/images
+      - render:/data/render:ro
     networks:
       - frontend
       - database
+
+  worker:
+    image: ghcr.io/xiangrui2026/shit-pool-worker:${IMAGE_TAG:?Set the published Git commit SHA}
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      renderer:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://shit_pool@db:5432/shit_pool
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set a PostgreSQL password}
+      DATABASE_MAX_CONNECTIONS: "1"
+      SHIT_POOL_RENDER_ENABLED: "true"
+      SHIT_POOL_RENDER_DIR: /data/render
+      SHIT_POOL_RENDER_IMAGE: ghcr.io/xiangrui2026/shit-pool-ccho:${IMAGE_TAG:?Set the published Git commit SHA}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    group_add:
+      - "${SHIT_POOL_DOCKER_GID:?Set the Docker socket group ID}"
+    volumes:
+      - images:/data/images:ro
+      - render:/data/render
+      - type: bind
+        source: ${SHIT_POOL_DOCKER_SOCKET:-/var/run/docker.sock}
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "docker image inspect \"$$SHIT_POOL_RENDER_IMAGE\" >/dev/null"]
+      interval: 15s
+      timeout: 4s
+      retries: 4
+    networks:
+      - database
+
+  renderer:
+    image: ghcr.io/xiangrui2026/shit-pool-ccho:${IMAGE_TAG:?Set the published Git commit SHA}
+    platform: linux/amd64
+    entrypoint: ["xelatex", "--version"]
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 
   db:
     image: postgres:17
@@ -69,5 +116,6 @@ networks:
 volumes:
   postgres-data:
   images:
+  render:
   caddy-data:
   caddy-config:
