@@ -6,6 +6,8 @@ mod images;
 mod questions;
 mod render_jobs;
 
+use std::sync::Arc;
+
 use axum::{
     Router,
     http::StatusCode,
@@ -39,14 +41,19 @@ pub(crate) fn router(
     database: Option<PgPool>,
     images: ImageStore,
     render: Option<Artifacts>,
+    admin_key: Option<String>,
 ) -> Router {
+    let admin_key = admin_key.map(Arc::<str>::from);
     let admin = questions::admin_routes()
         .into_iter()
         .chain(images::admin_routes())
         .fold(Router::new(), |router, (path, methods)| {
             router.route(
                 path,
-                methods.route_layer(middleware::from_fn(auth::require_admin)),
+                methods.route_layer(middleware::from_fn_with_state(
+                    admin_key.clone(),
+                    auth::require_admin,
+                )),
             )
         });
 

@@ -60,6 +60,7 @@ mod tests {
             database,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            None,
         )
         .oneshot(Request::get("/api/health").body(Body::empty()).unwrap())
         .await

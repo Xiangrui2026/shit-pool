@@ -1,0 +1,99 @@
+name: CI and container release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Test Rust projects
+        run: |
+          rustup toolchain install 1.98 --profile minimal
+          cargo +1.98 test --locked --manifest-path backend/Cargo.toml
+          cargo +1.98 test --locked --manifest-path cli/Cargo.toml
+      - name: Build Angular
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  images:
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Xiangrui2026/shit-pool'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Build production images
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          for component in web api; do
+            case "$component" in
+              web) context=frontend ;;
+              api) context=backend ;;
+            esac
+            docker build --platform linux/amd64 \
+              --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+              --label "org.opencontainers.image.revision=$IMAGE_TAG" \
+              --tag "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG" "$context"
+          done
+      - name: Smoke test production Compose
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          export SHIT_POOL_SITE=:80 SHIT_POOL_BIND_IP=127.0.0.1 SHIT_POOL_HTTP_PORT=18080 SHIT_POOL_HTTPS_PORT=18443
+          POSTGRES_PASSWORD="$(openssl rand -hex 32)"
+          SHIT_POOL_ADMIN_KEY="$(openssl rand -hex 32)"
+          export POSTGRES_PASSWORD SHIT_POOL_ADMIN_KEY
+          compose() { docker compose -p shit-pool-ci -f compose.prod.yaml "$@"; }
+          cleanup() {
+            if [ "$1" -ne 0 ]; then compose logs --no-color; fi
+            compose down --volumes
+          }
+          trap 'cleanup $?' EXIT
+          compose config --quiet
+          compose up --detach --wait --wait-timeout 90
+          base=http://127.0.0.1:18080
+          curl --fail --silent --show-error --retry 5 --retry-connrefused "$base/compose" | grep -qi '<app-root'
+          curl --fail --silent --show-error "$base/api/health" | jq -e '.database == "connected"'
+          curl --fail --silent --show-error "$base/api/questions" | jq -e '.total == 0'
+          question='{"category":"CI","source":"CI","stem":"Example"}'
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' --data "$question" "$base/api/questions")"
+          test "$status" = 401
+          curl --fail --silent --show-error --header 'Content-Type: application/json' \
+            --header "Authorization: Bearer $SHIT_POOL_ADMIN_KEY" --data "$question" \
+            "$base/api/questions" | jq -e '.id > 0'
+      - name: Push tested images to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          for component in web api; do
+            docker push "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG"
+          done
+          printf 'Published linux/amd64 images tagged %s\n' "$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"

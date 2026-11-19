@@ -66,6 +66,25 @@ npm.cmd start
 
 在浏览器打开 `http://127.0.0.1:4200`。Angular 开发服务器使用 `frontend/proxy.conf.json` 将 `/api/**` 转发至 `127.0.0.1:3000`。如修改 `API_ADDR`，本地代理目标也需同步修改。生产部署时由反向代理将同源 `/api/` 转给后端，并将前端路径（如 `/papers`）回退到 `index.html`；不要使用开发服务器部署。
 
+## 生产部署（Linux x86-64）
+
+GitHub Actions 在 PR 和推送 `main` 时运行 Rust 测试与 Angular 构建。只有原仓库的 `main` 推送会构建生产镜像并验证生产 Compose，检查通过后发布 `linux/amd64` 的 `ghcr.io/xiangrui2026/shit-pool-web` 和 `ghcr.io/xiangrui2026/shit-pool-api`，两者使用同一个完整 Git 提交 SHA 作为标签。发布只使用工作流自动提供的 `GITHUB_TOKEN`，不需要 VPS 凭据，也不会自动部署。
+
+VPS 需要 Docker Engine 与 Compose 插件。将域名指向 VPS，放行 TCP 80/443；Caddy 负责 HTTPS。把 `compose.prod.yaml` 和 `.env.production.example` 放在同一目录，复制示例为 `.env.production`（建议权限 `0600`），填写：
+
+- `IMAGE_TAG`：Actions 成功发布的完整提交 SHA。
+- `SHIT_POOL_SITE`：对外服务的域名（不带协议或路径）。
+- `POSTGRES_PASSWORD` 和 `SHIT_POOL_ADMIN_KEY`：分别生成两个不同的随机值，例如各执行一次 `openssl rand -hex 32`。不要提交配置文件或复用旧开发 Key。
+
+如果 GHCR 包是私有的，VPS 需要先用具备 `read:packages` 权限的凭证登录 `ghcr.io`；公开包可以直接拉取。配置好后在 VPS 手动执行：
+
+```sh
+docker compose --env-file .env.production -f compose.prod.yaml pull
+docker compose --env-file .env.production -f compose.prod.yaml up -d --wait
+```
+
+检查首页和 `/api/health`，确认返回 `database: "connected"`。只有 Caddy 发布端口；数据库、题图和 Caddy 证书使用独立持久卷。更新前将 PostgreSQL 和题图备份到另一台机器；不要用 `down -v` 停生产服务。可以保留旧镜像标签供回退，但回退镜像不会撤销迁移。此配置在 1 核 1 GB 上默认关闭在线 PDF 排版；本地组卷草稿与单题 TeX ZIP 仍可用。
+
 ## 本地组卷与排版
 
 1. 在题目详情选择「加入组卷」，或在套题页点击「整套加入组卷」。整套按原题顺序加入，已有同题合并到原卷顺序，不覆盖其他题或已有卷名；空白卷名自动使用来源名。进入「组卷」可继续调整，每卷最多 40 道。整套超限时不会部分加入。草稿和最近 10 个任务 ID 保存在同一浏览器。
@@ -130,7 +149,7 @@ API 与执行器使用同一数据库、配图目录和 `SHIT_POOL_RENDER_DIR`�
 
 录入套题时，同一试卷的 `source` 填相同的试卷名，题号另填正整数 `original_number`，例如 `{"source":"1992年决赛（理论试题一）","original_number":6}`。不同套别的来源名须保留区别。对旧数据，形如「试卷名第 6 题 · 题名」的来源自动取「试卷名」分组并识别题号，原始来源保留。显式题号优先；修改时用 `"original_number":null` 清除显式题号，恢复对来源的推断。`GET /api/questions` 与按 ID 查询均返回归组后的 `paper_source` 和实际用于排序的 `original_number`。
 
-临时 Key 是 `backend/src/http/auth.rs` 中的 `ADMIN_KEY`，只在服务端校验，不进前端构建。此方案仅供本地开发；外网部署前必须替换硬编码认证并启用 HTTPS。
+后端从 `SHIT_POOL_ADMIN_KEY` 读取管理 Key，只在服务端校验。至少 32 个 ASCII 字符，不得有空白；留空时题库写入和上传均拒绝，读接口不受影响。CLI 使用同一个值，通过 `SHIT_POOL_API_KEY` 注入。旧硬编码 Key 已停用；外网部署须启用 HTTPS。
 
 ## 命令行
 

@@ -139,6 +139,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(dir.path().into())),
             None,
+            None,
         );
         for (body, status, reason) in [
             (

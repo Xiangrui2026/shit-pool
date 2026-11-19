@@ -6,6 +6,10 @@
 - `backend/`：Rust/Axum 与 PostgreSQL。HTTP 路由放在 `src/http/`，持久化放在 `src/questions/`，表结构变更新增迁移，不改已应用的迁移。
 - `cli/`：Rust 命令行，走同一套 HTTP API，不直接访问数据库。JSON 格式和退出码约定详见 `cli/README.md`。
 
+## Git
+
+- 完成功能修改并验证后，提交本次任务的改动并正常推送到 `origin`；不强推，不把无关改动、密钥或运行数据纳入提交。
+
 ## Agent 使用命令行
 
 先运行 `shit-pool health` 确认目标。默认是本机 `http://127.0.0.1:3000`；`--url` 优先于 `SHIT_POOL_URL`。二进制未安装时，在仓库根目录用 `cargo run --quiet --locked --manifest-path cli/Cargo.toml -- <命令>`，或者运行 `cargo install --locked --path cli`。

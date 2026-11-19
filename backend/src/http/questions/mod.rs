@@ -218,6 +218,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         for path in [
             "/api/questions?q=test",
@@ -264,11 +265,25 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            None,
         );
         let response = write_question(app.clone(), "PUT", "/api/questions/1", None, "").await;
         assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
         let response = write_question(app, "POST", "/api/unknown", None, "").await;
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn write_remains_locked_without_an_explicit_admin_key() {
+        let directory = tempfile::tempdir().unwrap();
+        let app = router(
+            None,
+            ImageStore::new(LocalFileStore::new(directory.path().into())),
+            None,
+            None,
+        );
+        let response = create_question(app, Some(&auth::test_authorization()), NEW_QUESTION).await;
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]
@@ -278,6 +293,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         let authorization = auth::test_authorization();
         let large_json = " ".repeat(super::MAX_JSON_BODY_BYTES + 1);
@@ -300,6 +316,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         let authorization = auth::test_authorization();
         for (method, path, body, expected, code) in [
@@ -353,6 +370,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         let authorization = auth::test_authorization();
         for (body, expected) in [
@@ -379,6 +397,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         let authorization = auth::test_authorization();
         let response = create_question(

@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use axum::{
-    extract::Request,
+    extract::{Request, State},
     http::{StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
@@ -8,9 +10,11 @@ use subtle::ConstantTimeEq;
 
 use super::error::ApiError;
 
-const ADMIN_KEY: &str = "spk_dev_7b0e66c61ba21b0161d234fe962f8ea0c6e3163214585184";
-
-pub(super) async fn require_admin(request: Request, next: Next) -> Response {
+pub(super) async fn require_admin(
+    State(admin_key): State<Option<Arc<str>>>,
+    request: Request,
+    next: Next,
+) -> Response {
     let authorized = request
         .headers()
         .get(header::AUTHORIZATION)
@@ -18,7 +22,9 @@ pub(super) async fn require_admin(request: Request, next: Next) -> Response {
         .and_then(|value| value.split_once(' '))
         .is_some_and(|(scheme, key)| {
             scheme.eq_ignore_ascii_case("Bearer")
-                && bool::from(key.as_bytes().ct_eq(ADMIN_KEY.as_bytes()))
+                && admin_key
+                    .as_ref()
+                    .is_some_and(|expected| bool::from(key.as_bytes().ct_eq(expected.as_bytes())))
         });
 
     if !authorized {
@@ -33,6 +39,9 @@ pub(super) async fn require_admin(request: Request, next: Next) -> Response {
 }
 
 #[cfg(test)]
+pub(super) const TEST_KEY: &str = "test-only-key-for-admin-route-tests";
+
+#[cfg(test)]
 pub(super) fn test_authorization() -> String {
-    format!("Bearer {ADMIN_KEY}")
+    format!("Bearer {TEST_KEY}")
 }

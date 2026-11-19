@@ -100,6 +100,7 @@ mod tests {
             None,
             ImageStore::new(LocalFileStore::new(directory.path().into())),
             None,
+            Some(auth::TEST_KEY.into()),
         );
         let image = test_png();
         let unknown = app
