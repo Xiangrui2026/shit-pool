@@ -71,7 +71,9 @@ jobs:
           SHIT_POOL_ADMIN_KEY="$(openssl rand -hex 32)"
           SHIT_POOL_DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
           export POSTGRES_PASSWORD SHIT_POOL_ADMIN_KEY SHIT_POOL_DOCKER_GID
-          compose() { docker compose -p shit-pool-ci -f compose.prod.yaml "$@"; }
+          override="$RUNNER_TEMP/shit-pool-ci.yaml"
+          printf 'services:\n  worker:\n    environment:\n      SHIT_POOL_CI_TEX_DEBUG: "1"\n' > "$override"
+          compose() { docker compose -p shit-pool-ci -f compose.prod.yaml -f "$override" "$@"; }
           phase="validate Compose"
           detail=""
           started="$(date --iso-8601=seconds)"
@@ -83,6 +85,10 @@ jobs:
                 --format '{{index .Actor.Attributes "exitCode"}}' | paste -sd ',' - || true)"
               printf '::error title=Production Compose smoke test::%s%s. Services: %s. XeLaTeX container exits: %s\n' \
                 "$phase" "${detail:+ ($detail)}" "$services" "$exits"
+              if [ "$detail" = render_compile_failed ]; then
+                diagnostic="$(compose logs --no-color --no-log-prefix --tail 18 worker | tr '\n' ' ' | cut -c1-1800)"
+                printf '::error title=XeLaTeX CI fixture::%s\n' "${diagnostic//%/%25}"
+              fi
               compose logs --no-color || true
             fi
             compose down --volumes
