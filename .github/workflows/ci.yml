@@ -72,44 +72,62 @@ jobs:
           SHIT_POOL_DOCKER_GID="$(stat -c '%g' /var/run/docker.sock)"
           export POSTGRES_PASSWORD SHIT_POOL_ADMIN_KEY SHIT_POOL_DOCKER_GID
           compose() { docker compose -p shit-pool-ci -f compose.prod.yaml "$@"; }
+          phase="validate Compose"
+          detail=""
+          started="$(date --iso-8601=seconds)"
           cleanup() {
-            if [ "$1" -ne 0 ]; then compose logs --no-color; fi
+            if [ "$1" -ne 0 ]; then
+              services="$(compose ps --all --format '{{.Service}}={{.Status}}' | paste -sd ';' - || true)"
+              exits="$(docker events --since "$started" --until "$(date --iso-8601=seconds)" \
+                --filter event=die --filter "image=ghcr.io/xiangrui2026/shit-pool-ccho:$IMAGE_TAG" \
+                --format '{{index .Actor.Attributes "exitCode"}}' | paste -sd ',' - || true)"
+              printf '::error title=Production Compose smoke test::%s%s. Services: %s. XeLaTeX container exits: %s\n' \
+                "$phase" "${detail:+ ($detail)}" "$services" "$exits"
+              compose logs --no-color || true
+            fi
             compose down --volumes
           }
           trap 'cleanup $?' EXIT
           compose config --quiet
+          phase="start Compose"
           compose up --detach --wait --wait-timeout 90
           base=http://127.0.0.1:18080
+          phase="check the web and API routes"
           curl --fail --silent --show-error --retry 5 --retry-connrefused "$base/compose" | grep -qi '<app-root'
           curl --fail --silent --show-error "$base/api/health" | jq -e '.database == "connected"'
           curl --fail --silent --show-error "$base/api/questions" | jq -e '.total == 0'
           auth="Authorization: Bearer $SHIT_POOL_ADMIN_KEY"
+          phase="upload the test image"
           image="$(printf '%s' 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMITdsNAAKKAXcM7H+jAAAAAElFTkSuQmCC' |
             base64 --decode | curl --fail --silent --show-error --header "$auth" \
               --header 'Content-Type: application/octet-stream' --data-binary @- "$base/api/images" | jq -er '.path')"
           question="$(jq -nc --arg image "$image" \
             '{category:"CI",source:"CI",stem:("Compute $1+1$.\n\n\\includegraphics[width=1cm]{" + $image + "}"),answer:"$2$."}')"
+          phase="check admin authentication and create the test question"
           status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
             --header 'Content-Type: application/json' --data "$question" "$base/api/questions")"
           test "$status" = 401
           id="$(curl --fail --silent --show-error --header 'Content-Type: application/json' \
             --header "$auth" --data "$question" "$base/api/questions" | jq -er '.id | select(. > 0)')"
+          phase="submit a public render job"
           job="$(jq -nc --argjson id "$id" '{title:"CChO 排版检查",question_ids:[$id]}' |
             curl --fail --silent --show-error --header 'Content-Type: application/json' \
               --data-binary @- "$base/api/render-jobs" | jq -er '.id | select(test("^[0-9a-f]{32}$"))')"
           url="$base/api/render-jobs/$job"
           status=queued
+          phase="wait for XeLaTeX to render the paper"
           for attempt in $(seq 1 100); do
             state="$(curl --fail --silent --show-error "$url")"
             status="$(jq -er '.status' <<< "$state")"
             case "$status" in
               completed) break ;;
-              failed) jq -r '.error' <<< "$state" >&2; exit 1 ;;
+              failed) detail="$(jq -er '.error' <<< "$state")"; exit 1 ;;
             esac
             sleep 2
           done
           test "$status" = completed
           for kind in questions answers; do
+            phase="download the $kind PDF"
             file="$RUNNER_TEMP/shit-pool-$kind.pdf"
             curl --fail --silent --show-error "$url/files/$kind" --output "$file"
             test "$(head -c 5 "$file")" = '%PDF-'
