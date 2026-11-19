@@ -147,7 +147,6 @@ impl ContainerEngine {
         input: Vec<u8>,
     ) -> Result<Vec<u8>, &'static str> {
         let name = format!("shit-pool-render-{id}-{}", artifact.name());
-        let ci_debug = std::env::var_os("SHIT_POOL_CI_TEX_DEBUG").is_some_and(|value| value == "1");
         let mut child = Command::new("docker")
             .args([
                 "run",
@@ -166,7 +165,6 @@ impl ContainerEngine {
                 "--memory=512m",
                 "--memory-swap=512m",
                 "--log-driver=none",
-                "--env=SHIT_POOL_CI_TEX_DEBUG",
                 "--tmpfs=/work:rw,nosuid,nodev,noexec,size=80m,mode=1777",
                 "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=32m,mode=1777",
                 &self.0,
@@ -174,11 +172,7 @@ impl ContainerEngine {
             ])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(if ci_debug {
-                Stdio::inherit()
-            } else {
-                Stdio::null()
-            })
+            .stderr(Stdio::null())
             .kill_on_drop(true)
             .spawn()
             .map_err(|_| "render_engine_unavailable")?;

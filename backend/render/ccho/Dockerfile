@@ -3,7 +3,7 @@ FROM debian:bookworm-slim
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         fonts-texgyre texlive-xetex texlive-lang-chinese texlive-fonts-recommended \
-        texlive-fonts-extra texlive-science texlive-pictures unzip \
+        texlive-fonts-extra texlive-science texlive-pictures texlive-plain-generic unzip \
     && rm -rf /var/lib/apt/lists/*
 
 COPY compile.sh /usr/local/bin/compile-paper
