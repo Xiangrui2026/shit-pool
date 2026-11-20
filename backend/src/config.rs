@@ -71,7 +71,7 @@ fn optional_admin_key() -> Result<Option<String>, env::VarError> {
     }
 }
 
-fn optional_var(key: &str) -> Result<Option<String>, env::VarError> {
+pub(crate) fn optional_var(key: &str) -> Result<Option<String>, env::VarError> {
     match env::var(key) {
         Ok(value) if value.trim().is_empty() => Ok(None),
         Ok(value) => Ok(Some(value)),

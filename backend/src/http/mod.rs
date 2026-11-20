@@ -1,6 +1,7 @@
 mod auth;
 mod error;
 mod export;
+pub(crate) mod feedback;
 mod health;
 mod images;
 mod questions;

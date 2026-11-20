@@ -1,0 +1,24 @@
+<article class="page">
+  <h1>反馈问题</h1>
+  <form (submit)="submit($event)">
+    <label for="feedback-message">反馈内容</label>
+    <textarea
+      #field
+      id="feedback-message"
+      name="message"
+      rows="9"
+      maxlength="3000"
+      required
+      placeholder="请描述遇到的问题。与题目有关时，可以附上题目 ID。"
+      [value]="message()"
+      [disabled]="sending()"
+      (input)="update(field.value)"
+    ></textarea>
+    <div class="actions">
+      <button type="submit" [disabled]="sending() || !message().trim()">
+        {{ sending() ? '正在发送…' : '提交反馈' }}
+      </button>
+      <p role="status" [class.error]="notice()?.kind === 'error'">{{ notice()?.text }}</p>
+    </div>
+  </form>
+</article>

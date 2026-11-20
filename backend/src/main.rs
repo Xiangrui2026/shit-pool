@@ -42,19 +42,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if let Some(pool) = &database {
         db::migrate(pool).await?;
     }
+    let app =
+        http::router(database, images, render, config.admin_key).merge(http::feedback::routes()?);
 
     let listener = tokio::net::TcpListener::bind(config.api_address).await?;
     println!(
         "SHIT-Pool API listening on http://{}",
         listener.local_addr()?
     );
-    axum::serve(
-        listener,
-        http::router(database, images, render, config.admin_key),
-    )
-    .with_graceful_shutdown(async {
-        let _ = tokio::signal::ctrl_c().await;
-    })
-    .await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            let _ = tokio::signal::ctrl_c().await;
+        })
+        .await?;
     Ok(())
 }

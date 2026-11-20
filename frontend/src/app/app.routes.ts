@@ -17,5 +17,15 @@ export const routes: Routes = [
     title: '本地组卷 · SHIT-Pool 石库',
     loadComponent: () => import('./features/compose/paper-composer').then((module) => module.PaperComposer),
   },
+  {
+    path: 'feedback',
+    title: '反馈问题 · SHIT-Pool 石库',
+    loadComponent: () => import('./features/site-info/feedback').then((module) => module.Feedback),
+  },
+  {
+    path: 'about',
+    title: '关于 · SHIT-Pool 石库',
+    loadComponent: () => import('./features/site-info/about').then((module) => module.About),
+  },
   { path: '**', redirectTo: '' },
 ];

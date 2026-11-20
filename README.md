@@ -86,6 +86,8 @@ docker compose --env-file .env.production -f compose.prod.yaml up -d --wait
 
 检查首页和 `/api/health`，确认返回 `database: "connected"`，再从网页送排一份带图的短卷。Caddy 在域名解析正确且公网 TCP 80/443 可访问时自动签发并续签 HTTPS 证书。生产配置默认开启在线 PDF 排版。Compose 验证 XeLaTeX 镜像已加载后启动单个 worker。TeX 容器按任务启动，正常部署时 `renderer` 初始化服务显示退出码 `0`，不需要常驻。只有 Caddy 发布端口。数据库、题图、PDF 和 HTTPS 证书使用独立持久卷。
 
+启用网站反馈邮件时，在 VPS 的 `.env.production` 中设置 `SHIT_POOL_SMTP_HOST`、`SHIT_POOL_SMTP_USER`、`SHIT_POOL_SMTP_PASSWORD` 和 `SHIT_POOL_FEEDBACK_TO`。SMTP 使用 TLS，`SHIT_POOL_SMTP_PORT` 默认为 `465`。重建 API 容器后，新配置生效。
+
 若使用自动部署，在首次启动项目之前将 `.env.production` 放在 `/opt/shit-pool/`，并删除其中的 `IMAGE_TAG` 行。部署脚本会用生产镜像标签选定版本。部署目录、配置和脚本应由 root 持有。已经手动启动的实例应沿用其 Compose 项目名和卷，确认迁移方案后再启用自动部署。全新 VPS 可以直接启用定时器。
 
 ```sh
