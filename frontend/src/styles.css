@@ -18,6 +18,11 @@ svg { display: block; }
 .katex svg { display: inline; }
 app-latex-content .latex-image { display: block; max-width: 100%; height: auto; margin: .6em auto; }
 app-latex-content .katex-display { overflow-x: auto; overflow-y: hidden; padding: .15em 0; }
+app-latex-content .latex-center { text-align: center; }
+app-latex-content .latex-minipage { display: inline-block; max-width: 100%; vertical-align: top; }
+app-latex-content .latex-table-scroll { display: block; max-width: 100%; overflow-x: auto; margin: .6em 0; }
+app-latex-content table { width: max-content; max-width: 100%; margin-inline: auto; border-collapse: collapse; text-align: left; }
+app-latex-content td { padding: .3em .6em; border: 1px solid var(--line); white-space: nowrap; }
 app-latex-content pre { overflow: auto; white-space: pre-wrap; margin: .75em 0; padding: .75em 1em; background: #f5f2fc; border-radius: 8px; font-size: .83em; }
 :focus-visible { outline: 3px solid #8d74ff; outline-offset: 3px; }
 [id] { scroll-margin-top: 24px; }
