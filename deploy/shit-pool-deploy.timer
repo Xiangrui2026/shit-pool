@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for promoted SHIT-Pool releases every two minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/2:00
+AccuracySec=10s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

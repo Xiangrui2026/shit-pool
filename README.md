@@ -68,7 +68,7 @@ npm.cmd start
 
 ## 生产部署（Linux x86-64）
 
-GitHub Actions 在 PR 和推送 `main` 时运行 Rust 测试与 Angular 构建。只有原仓库的 `main` 推送会构建并启动生产 Compose，送排一道带图和答案的测试题，确认两份 PDF 都可下载后，再发布 `linux/amd64` 的 `shit-pool-web`、`shit-pool-api`、`shit-pool-worker` 和 `shit-pool-ccho` 到 `ghcr.io/xiangrui2026`，使用同一个完整 Git 提交 SHA 作为标签。发布使用工作流自动提供的 `GITHUB_TOKEN`，不需要 VPS 凭据，也不会自动部署。
+GitHub Actions 在 PR 和推送 `main` 时运行 Rust 测试与 Angular 构建。只有原仓库的 `main` 推送会构建并启动生产 Compose，送排一道带图和答案的测试题，确认两份 PDF 都可下载后，再发布 `linux/amd64` 的 `shit-pool-web`、`shit-pool-api`、`shit-pool-worker` 和 `shit-pool-ccho` 到 `ghcr.io/xiangrui2026`。四个镜像使用同一个完整 Git 提交 SHA 作为标签。所有镜像上传成功后，工作流将 `shit-pool-api:production` 指向该版本供 VPS 拉取。
 
 VPS 需要 Docker Engine 与 Compose 插件。将域名指向 VPS，放行 TCP 80/443；Caddy 负责 HTTPS。把 `compose.prod.yaml` 和 `.env.production.example` 放在同一目录，复制示例为 `.env.production`（建议权限 `0600`），填写：
 
@@ -84,7 +84,20 @@ docker compose --env-file .env.production -f compose.prod.yaml pull
 docker compose --env-file .env.production -f compose.prod.yaml up -d --wait
 ```
 
-检查首页和 `/api/health`，确认返回 `database: "connected"`，再从网页送排一份带图的短卷。生产配置默认开启在线 PDF 排版；Compose 验证 XeLaTeX 镜像已加载后启动单个 worker。TeX 容器按任务启动，正常部署时 `renderer` 初始化服务显示退出码 `0`，不需要常驻。只有 Caddy 发布端口；数据库、题图、PDF 和 HTTPS 证书使用独立持久卷。
+检查首页和 `/api/health`，确认返回 `database: "connected"`，再从网页送排一份带图的短卷。Caddy 在域名解析正确且公网 TCP 80/443 可访问时自动签发并续签 HTTPS 证书。生产配置默认开启在线 PDF 排版。Compose 验证 XeLaTeX 镜像已加载后启动单个 worker。TeX 容器按任务启动，正常部署时 `renderer` 初始化服务显示退出码 `0`，不需要常驻。只有 Caddy 发布端口。数据库、题图、PDF 和 HTTPS 证书使用独立持久卷。
+
+若使用自动部署，在首次启动项目之前将 `.env.production` 放在 `/opt/shit-pool/`，并删除其中的 `IMAGE_TAG` 行。部署脚本会用生产镜像标签选定版本。部署目录、配置和脚本应由 root 持有。已经手动启动的实例应沿用其 Compose 项目名和卷，确认迁移方案后再启用自动部署。全新 VPS 可以直接启用定时器。
+
+```sh
+sudo install -d -m 0750 /opt/shit-pool/releases
+sudo install -m 0750 deploy/deploy-release.sh /opt/shit-pool/
+sudo install -m 0644 deploy/shit-pool-deploy.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now shit-pool-deploy.timer
+sudo systemctl start shit-pool-deploy.service
+```
+
+定时器每两分钟检查一次已发布版本。部署脚本校验对应提交的 Compose 文件，先拉齐镜像，再重建容器，通过健康检查后将版本写入 `/opt/shit-pool/current`。用 `journalctl -u shit-pool-deploy.service` 查看结果。版本确认后会清理 VPS 上上一个版本的石库镜像标签，旧版仍可从 GHCR 重新拉取。GitHub Actions 使用自动提供的 `GITHUB_TOKEN`，VPS 凭据由服务器自行保存。
 
 只有受信任的 worker 挂载 Docker socket。访问 rootful Docker socket 等同于掌握宿主机高权限；不要把它挂给 Web、API 或 XeLaTeX 容器，也不要公开 Docker API。实际编译在禁网、只读根文件系统的非特权容器里，一次只跑一份，限制为 0.75 核、512 MiB，不挂载宿主目录或凭据。在 1 核 1 GB VPS 上应先用实际试卷验证耗时和内存余量，避免暴露不限量的匿名提交；应用已有队列容量和每日总量上限，公开使用时建议再配置按来源限流。若使用 Rootless Docker，确认 Linux cgroup v2、systemd 与 CPU、内存和进程数限制实际生效。
 

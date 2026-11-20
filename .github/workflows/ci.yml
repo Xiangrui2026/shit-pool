@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-24.04
@@ -49,6 +53,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          compose_sha="$(sha256sum compose.prod.yaml | cut -d ' ' -f 1)"
           for component in web api worker ccho; do
             target=()
             case "$component" in
@@ -59,6 +64,7 @@ jobs:
             docker build --platform linux/amd64 "${target[@]}" \
               --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
               --label "org.opencontainers.image.revision=$IMAGE_TAG" \
+              --label "io.shitpool.compose-sha256=$compose_sha" \
               --tag "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG" "$context"
           done
       - name: Smoke test production Compose
@@ -132,7 +138,7 @@ jobs:
             curl --fail --silent --show-error "$url/files/$kind" --output "$file"
             test "$(head -c 5 "$file")" = '%PDF-'
           done
-      - name: Push tested images to GHCR
+      - name: Publish tested images and promote production
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ github.sha }}
@@ -141,4 +147,7 @@ jobs:
           for component in web api worker ccho; do
             docker push "ghcr.io/xiangrui2026/shit-pool-$component:$IMAGE_TAG"
           done
-          printf 'Published linux/amd64 images tagged %s\n' "$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          api=ghcr.io/xiangrui2026/shit-pool-api
+          docker tag "$api:$IMAGE_TAG" "$api:production"
+          docker push "$api:production"
+          printf 'Promoted linux/amd64 release %s to production\n' "$IMAGE_TAG" >> "$GITHUB_STEP_SUMMARY"

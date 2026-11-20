@@ -1,0 +1,10 @@
+[Unit]
+Description=Deploy the promoted SHIT-Pool release
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/shit-pool/deploy-release.sh
+TimeoutStartSec=15min
