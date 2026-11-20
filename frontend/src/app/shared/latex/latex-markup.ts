@@ -11,7 +11,8 @@ const textStyles: Record<string, string> = {
 };
 const textSymbols: Record<string, string> = {
   '\\%': '%', '\\_': '_', '\\&': '&', '\\#': '#', '\\$': '$', '\\{': '{', '\\}': '}',
-  '\\ ': ' ', '\\quad': '\u2003', '\\qquad': '\u2003\u2003', '\\ldots': '…', '\\AA': 'Å',
+  '\\ ': ' ', '\\enspace': '\u2002', '\\quad': '\u2003', '\\qquad': '\u2003\u2003',
+  '\\ldots': '…', '\\AA': 'Å',
   '~': '\u00a0',
 };
 const layoutOnly = new Set([
