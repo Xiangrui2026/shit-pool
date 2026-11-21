@@ -1,6 +1,8 @@
+mod rating;
 mod repository;
 mod solutions;
 
+pub(crate) use rating::{QuestionScore, RankOrder, RankedQuestion, Vote, ranking, rate};
 pub(crate) use repository::{
     categories, find, insert, paper_questions, papers, render_selection, search, soft_delete, tags,
     update,
@@ -57,6 +59,7 @@ pub(crate) struct Question {
     pub answer: String,
     pub notes: String,
     pub tags: String,
+    pub score: i64,
 }
 
 #[derive(Serialize, sqlx::FromRow)]

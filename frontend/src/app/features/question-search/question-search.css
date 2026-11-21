@@ -68,7 +68,9 @@ app-tag-filter { padding-top: 13px; border-top: 1px solid var(--line); }
 .page-number[aria-current='page'] { border-color: #d5c2f7; background: #eee6fb; color: #543292; }
 .question { position: relative; min-width: 0; margin-top: 10px; padding: clamp(15px, 2vw, 23px); overflow-wrap: anywhere; }
 .question:hover, .question:focus-within { border-color: #ccbaed; box-shadow: 0 4px 13px #29134a09; }
-.question-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 11px; padding: 0; border: 0; background: none; color: #5e43a3; font-size: 13px; font-weight: 700; cursor: pointer; }
+.question-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 11px; }
+.question-actions app-question-rating { position: relative; z-index: 1; }
+.question-link { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: #5e43a3; font-size: 13px; font-weight: 700; cursor: pointer; }
 .question-link svg { width: 15px; height: 15px; }
 .question-link::after { content: ''; position: absolute; inset: 0; border-radius: 12px; }
 .question-link:focus-visible { outline: none; }

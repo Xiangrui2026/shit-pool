@@ -10,7 +10,7 @@
 .masthead-nav { display: flex; align-items: center; gap: 4px; }
 .masthead-nav a { padding: .52rem .7rem; border-radius: 7px; color: #ded6ed; font-size: 13px; white-space: nowrap; }
 .masthead-nav a:hover, .masthead-nav a.active { background: #34294d; color: #fff; }
-@media (max-width: 580px) {
+@media (max-width: 640px) {
   .masthead-inner { flex-wrap: wrap; padding-block: 10px; }
   .masthead-nav { flex-wrap: wrap; }
   .masthead-nav a { padding-inline: .42rem; font-size: 12px; }

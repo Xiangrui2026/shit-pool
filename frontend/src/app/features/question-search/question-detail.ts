@@ -2,11 +2,12 @@ import { Component, ElementRef, computed, inject, signal, viewChild } from '@ang
 
 import { Question, QuestionsApi, Solution } from '../../core/api/questions-api';
 import { LatexContent } from '../../shared/latex/latex-content';
+import { QuestionRating } from '../../shared/question-rating/question-rating';
 import { PAPER_LIMIT, PaperDraft } from '../compose/paper-draft';
 
 @Component({
   selector: 'app-question-detail',
-  imports: [LatexContent],
+  imports: [LatexContent, QuestionRating],
   templateUrl: './question-detail.html',
   styleUrl: './question-detail.css',
 })
@@ -15,6 +16,7 @@ export class QuestionDetail {
   private readonly api = inject(QuestionsApi);
   protected readonly draft = inject(PaperDraft);
   protected readonly question = signal<Question | null>(null);
+  protected readonly questionId = signal<number | null>(null);
   protected readonly exporting = signal(false);
   protected readonly exportError = signal('');
   protected readonly solutions = signal<Solution[] | null>(null);
@@ -24,10 +26,12 @@ export class QuestionDetail {
   private pendingDetail = 0;
   private pendingExport = 0;
 
-  open(question: Question): void {
-    this.question.set(question);
+  open(question: Question | number): void {
+    const id = typeof question === 'number' ? question : question.id;
+    this.questionId.set(id);
+    this.question.set(typeof question === 'number' ? null : question);
     this.dialog().nativeElement.showModal();
-    void this.loadSolutions(question.id);
+    void this.loadSolutions(id);
   }
 
   protected async loadSolutions(id: number): Promise<void> {
@@ -54,6 +58,7 @@ export class QuestionDetail {
     this.pendingDetail++;
     this.pendingExport++;
     this.question.set(null);
+    this.questionId.set(null);
     this.exporting.set(false);
     this.exportError.set('');
     this.solutions.set(null);

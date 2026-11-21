@@ -1,0 +1,12 @@
+<div class="rating" role="group" aria-label="评石">
+  <button type="button" class="star" aria-label="Star，加 1 分" [disabled]="pending()" (click)="vote('star')">
+    <span aria-hidden="true">☆</span> Star
+  </button>
+  <output aria-label="评分" [class.positive]="displayedScore() > 0" [class.negative]="displayedScore() < 0">
+    {{ displayedScore() > 0 ? '+' : '' }}{{ displayedScore() }}
+  </output>
+  <button type="button" class="dislike" aria-label="Dislike，减 1 分" [disabled]="pending()" (click)="vote('dislike')">
+    Dislike
+  </button>
+</div>
+@if (error()) { <p role="status">暂时无法确认评分，请刷新后查看。</p> }

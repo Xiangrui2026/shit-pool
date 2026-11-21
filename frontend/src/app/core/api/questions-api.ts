@@ -25,6 +25,16 @@ export interface Question {
   answer: string;
   notes: string;
   tags: string;
+  score: number;
+}
+
+export type RankedQuestion = Pick<Question, 'id' | 'category' | 'source' | 'stem' | 'score'>;
+export type RankOrder = 'good' | 'bad';
+export type Vote = 'star' | 'dislike';
+
+export interface QuestionScore {
+  id: number;
+  score: number;
 }
 
 export interface Solution {
@@ -83,6 +93,18 @@ export class QuestionsApi {
 
   export(id: number): Promise<Blob> {
     return firstValueFrom(this.http.get('/api/questions/' + id + '/export', { responseType: 'blob' }).pipe(timeout(20000)));
+  }
+
+  rate(id: number, vote: Vote): Promise<QuestionScore> {
+    return firstValueFrom(this.http.post<QuestionScore>('/api/questions/' + id + '/rating', { vote }).pipe(timeout(6000)));
+  }
+
+  ranking(order: RankOrder, tags: string[], tagMatch: TagMatch) {
+    let params = new HttpParams().set('order', order);
+    if (tags.length) {
+      params = params.set('tags', tags.join(',')).set('tag_match', tagMatch);
+    }
+    return this.http.get<RankedQuestion[]>('/api/rankings', { params }).pipe(timeout(6000));
   }
 
   search(filters: QueryFilters, page: number): Promise<SearchPage> {

@@ -24,6 +24,9 @@
           {{ addedToDraft() ? '已加入组卷' : draftFull() ? '草稿已满' : '加入组卷' }}
         </button>
         @if (draft.storageFailed()) { <span role="alert">草稿未能写入浏览器存储。</span> }
+        @if (solutions() !== null || solutionError()) {
+          <app-question-rating [questionId]="item.id" [score]="item.score" />
+        }
       </div>
       <dl class="meta">
         <div><dt>题目 ID</dt><dd><code class="question-id">{{ item.id }}</code></dd></div>
@@ -67,6 +70,16 @@
           <h3 id="question-notes-title">备注</h3>
           <p class="notes">{{ item.notes }}</p>
         </section>
+      }
+    </div>
+  } @else if (questionId(); as id) {
+    <div class="body">
+      @if (solutionError()) {
+        <p class="export-error" role="alert">
+          暂时无法读取题目。 <button class="retry" type="button" (click)="loadSolutions(id)">重试</button>
+        </p>
+      } @else {
+        <p class="notes" role="status">正在加载题目…</p>
       }
     </div>
   }

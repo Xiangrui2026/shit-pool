@@ -114,6 +114,7 @@ mod tests {
                 answer: answer.clone(),
                 notes: String::new(),
                 tags: String::new(),
+                score: 0,
             },
             solutions: sqlx::types::Json(vec![Solution {
                 id: 1,

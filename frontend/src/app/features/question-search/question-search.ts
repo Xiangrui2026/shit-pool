@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, inject, signal, viewChild } from '@ang
 
 import { Category, QueryFilters, Question, QuestionsApi, Tag, TagMatch } from '../../core/api/questions-api';
 import { LatexContent } from '../../shared/latex/latex-content';
+import { QuestionRating } from '../../shared/question-rating/question-rating';
 import { CategorySidebar } from './category-sidebar';
 import { QuestionDetail } from './question-detail';
 import { TagFilter } from './tag-filter';
@@ -15,7 +16,7 @@ function defaultFilters(): QueryFilters {
 
 @Component({
   selector: 'app-question-search',
-  imports: [CategorySidebar, TagFilter, LatexContent, QuestionDetail],
+  imports: [CategorySidebar, TagFilter, LatexContent, QuestionDetail, QuestionRating],
   templateUrl: './question-search.html',
   styleUrl: './question-search.css',
 })

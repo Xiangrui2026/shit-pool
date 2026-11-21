@@ -49,7 +49,7 @@ pub(crate) async fn search(
                          ELSE string_to_array(q.tags, ',') && $5 END)
          ), visible AS (
              SELECT q.id, c.name AS category, q.source, q.original_number, q.paper_source,
-                    q.stem, q.answer, q.notes, q.tags
+                    q.stem, q.answer, q.notes, q.tags, q.score
              FROM (SELECT id FROM matched ORDER BY id DESC LIMIT $4 OFFSET $3) AS page
              JOIN question_papers AS q ON q.id = page.id
              JOIN categories AS c ON c.id = q.category_id
@@ -72,7 +72,7 @@ pub(crate) async fn search(
 pub(crate) async fn find(pool: &PgPool, id: i32) -> Result<Option<QuestionDetail>, sqlx::Error> {
     sqlx::query_as(
         "SELECT q.id, c.name AS category, q.source, q.original_number, q.paper_source,
-                q.stem, q.answer, q.notes, q.tags,
+                q.stem, q.answer, q.notes, q.tags, q.score,
                 COALESCE((
                     SELECT json_agg(solution ORDER BY is_default DESC, id) FROM (
                         SELECT id, title, body,
@@ -118,7 +118,7 @@ pub(crate) async fn paper_questions(
 ) -> Result<Vec<Question>, sqlx::Error> {
     sqlx::query_as(
         "SELECT q.id, c.name AS category, q.source, q.original_number, q.paper_source,
-                q.stem, q.answer, q.notes, q.tags
+                q.stem, q.answer, q.notes, q.tags, q.score
          FROM question_papers AS q JOIN categories AS c ON c.id = q.category_id
          WHERE q.paper_source = $1
          ORDER BY q.original_number ASC NULLS LAST, q.id ASC",

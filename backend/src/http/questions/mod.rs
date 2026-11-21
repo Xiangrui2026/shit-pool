@@ -1,4 +1,5 @@
 mod papers;
+mod rating;
 mod solutions;
 
 use axum::{
@@ -24,6 +25,11 @@ pub(super) fn public_routes() -> Router<AppState> {
         .route("/api/papers/questions", route_get(papers::detail))
         .route("/api/questions", route_get(search))
         .route("/api/questions/{id}", route_get(get))
+        .route("/api/rankings", route_get(rating::ranking))
+        .route(
+            "/api/questions/{id}/rating",
+            route_post(rating::rate).layer(DefaultBodyLimit::max(1024)),
+        )
 }
 
 pub(super) fn admin_routes() -> [AdminRoute; 4] {
@@ -105,15 +111,7 @@ pub(super) async fn search(
     if query.category_id.is_some_and(|id| id < 1) {
         return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_category"));
     }
-    if query.tags.len() > MAX_TAG_FILTER_LENGTH || query.tags.contains('\0') {
-        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_tags"));
-    }
-    let tags = query
-        .tags
-        .split(',')
-        .map(str::trim)
-        .filter(|tag| !tag.is_empty())
-        .collect::<Vec<_>>();
+    let tags = validated_tags(&query.tags)?;
 
     let pool = state.pool()?;
     let (total, items) = questions::search(
@@ -132,6 +130,17 @@ pub(super) async fn search(
         page_size: PAGE_SIZE,
         total,
     }))
+}
+
+fn validated_tags(tags: &str) -> Result<Vec<&str>, ApiError> {
+    if tags.len() > MAX_TAG_FILTER_LENGTH || tags.contains('\0') {
+        return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_tags"));
+    }
+    Ok(tags
+        .split(',')
+        .map(str::trim)
+        .filter(|tag| !tag.is_empty())
+        .collect())
 }
 
 pub(super) async fn create(

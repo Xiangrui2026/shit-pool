@@ -1,0 +1,65 @@
+<div class="rankings">
+  <header class="heading">
+    <h1>SHIT 排行榜</h1>
+  </header>
+
+  <div class="controls">
+    <div class="boards" role="group" aria-label="榜单类型">
+      <button type="button" [attr.aria-pressed]="filters().order === 'good'" (click)="updateFilters({ order: 'good' })">
+        好石
+      </button>
+      <button type="button" [attr.aria-pressed]="filters().order === 'bad'" (click)="updateFilters({ order: 'bad' })">
+        坏石
+      </button>
+    </div>
+    <app-tag-filter [tags]="tags()" [selected]="filters().tags" [mode]="filters().tagMatch" [state]="tagState()"
+      (toggled)="toggleTag($event)" (modeChanged)="updateFilters({ tagMatch: $event })"
+      (cleared)="updateFilters({ tags: [] })" (retry)="loadTags()" />
+  </div>
+
+  @let result = ranking();
+  <section class="results" aria-labelledby="rank-title" [attr.aria-busy]="result.status === 'loading'">
+    <div class="result-header">
+      <h2 id="rank-title">{{ filters().order === 'good' ? '好石' : '坏石' }}</h2>
+      <span>{{ filters().order === 'good' ? '评分从高到低' : '评分从低到高' }} · 最多 25 道</span>
+    </div>
+
+    @if (result.status === 'loading') {
+      <p class="status" role="status">正在加载榜单…</p>
+    } @else if (result.status === 'error') {
+      <p class="status" role="status">暂时无法加载榜单。 <button type="button" (click)="reloadRanking.next()">重试</button></p>
+    } @else if (result.status === 'ready') {
+      @if (result.items.length) {
+        <ol class="entries">
+          @for (item of result.items; track item.id; let rank = $index) {
+            <li class="entry">
+              <div class="place" aria-hidden="true">{{ rank + 1 }}</div>
+              <div class="entry-content">
+                <header class="meta">
+                  <span class="category">{{ item.category }}</span>
+                  <span>{{ item.source }}</span>
+                </header>
+                @defer (on viewport) {
+                  <app-latex-content class="stem" [source]="item.stem" />
+                } @placeholder {
+                  <div class="stem-placeholder" aria-hidden="true"></div>
+                }
+                <footer class="actions">
+                  <button class="details" type="button" aria-haspopup="dialog"
+                    [attr.aria-label]="'查看题目 ' + item.id + ' 详情'" (click)="detail.open(item.id)">
+                    查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+                  </button>
+                  <app-question-rating [questionId]="item.id" [score]="item.score" />
+                </footer>
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="status" role="status">没有符合当前条件的题目。</p>
+      }
+    }
+  </section>
+</div>
+
+<app-question-detail #detail />

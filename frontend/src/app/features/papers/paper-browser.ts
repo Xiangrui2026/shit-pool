@@ -6,6 +6,7 @@ import { catchError, combineLatest, distinctUntilChanged, map, of, startWith, Su
 
 import { Paper, Question, QuestionsApi } from '../../core/api/questions-api';
 import { LatexContent } from '../../shared/latex/latex-content';
+import { QuestionRating } from '../../shared/question-rating/question-rating';
 import { PAPER_LIMIT, PaperDraft } from '../compose/paper-draft';
 import { QuestionDetail } from '../question-search/question-detail';
 
@@ -16,7 +17,7 @@ type LoadState<T> =
 
 @Component({
   selector: 'app-paper-browser',
-  imports: [RouterLink, LatexContent, QuestionDetail],
+  imports: [RouterLink, LatexContent, QuestionDetail, QuestionRating],
   templateUrl: './paper-browser.html',
   styleUrl: './paper-browser.css',
 })

@@ -74,9 +74,12 @@
                 <span>{{ question.category }}</span>
               </div>
               <app-latex-content [source]="question.stem" />
-              <button class="details" type="button" aria-haspopup="dialog" [attr.aria-label]="'查看题目 ' + question.id + ' 详情'" (click)="detail.open(question)">
-                查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
-              </button>
+              <footer class="question-actions">
+                <button class="details" type="button" aria-haspopup="dialog" [attr.aria-label]="'查看题目 ' + question.id + ' 详情'" (click)="detail.open(question)">
+                  查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+                </button>
+                <app-question-rating [questionId]="question.id" [score]="question.score" />
+              </footer>
             </li>
           }
         </ol>

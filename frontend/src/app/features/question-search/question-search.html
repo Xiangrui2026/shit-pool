@@ -82,11 +82,14 @@
               }
             </ul>
           }
-          <button class="question-link" type="button" aria-haspopup="dialog"
-            [attr.aria-label]="'查看题目 ' + item.id + ' 详情，来源：' + item.source"
-            (click)="detail.open(item)">
-            查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
-          </button>
+          <footer class="question-actions">
+            <button class="question-link" type="button" aria-haspopup="dialog"
+              [attr.aria-label]="'查看题目 ' + item.id + ' 详情，来源：' + item.source"
+              (click)="detail.open(item)">
+              查看详情 <svg aria-hidden="true"><use href="icons.svg#arrow" /></svg>
+            </button>
+            <app-question-rating [questionId]="item.id" [score]="item.score" />
+          </footer>
         </article>
       }
 

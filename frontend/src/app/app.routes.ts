@@ -13,6 +13,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/papers/paper-browser').then((module) => module.PaperBrowser),
   },
   {
+    path: 'rankings',
+    title: 'SHIT 排行榜 · SHIT-Pool 石库',
+    loadComponent: () => import('./features/rankings/rankings').then((module) => module.Rankings),
+  },
+  {
     path: 'compose',
     title: '本地组卷 · SHIT-Pool 石库',
     loadComponent: () => import('./features/compose/paper-composer').then((module) => module.PaperComposer),

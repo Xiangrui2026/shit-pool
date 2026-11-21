@@ -26,7 +26,8 @@ dd { margin: 0; }
 .answer h4 { margin: 0 0 6px; color: #3e2b68; font-size: 14px; }
 .default-answer, .answer-count { margin-inline-start: 4px; padding: 2px 6px; border-radius: 20px; color: #51318e; background: #f1eaff; font-size: 11px; }
 .retry { min-height: 28px; padding-inline: 7px; border: 1px solid #e2d9ed; background: #fff; color: #5a4c75; }
-.compose-action { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+.compose-action { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+.compose-action app-question-rating { margin-inline-start: auto; }
 .compose-action button:disabled { cursor: default; opacity: .7; }
 h3 { margin: 0 0 5px; color: #58418a; font-size: 13px; }
 .notes { margin: 0; color: var(--muted); white-space: pre-wrap; }
