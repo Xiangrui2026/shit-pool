@@ -17,7 +17,6 @@ export const routes: Routes = [
     title: '套题 · SHIT-Pool 石库',
     loadComponent: () => import('./features/papers/paper-browser').then((module) => module.PaperBrowser),
   },
-  { path: 'rankings', pathMatch: 'full', redirectTo: '' },
   {
     path: 'compose',
     title: '本地组卷 · SHIT-Pool 石库',
