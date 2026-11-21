@@ -1,71 +1,76 @@
-<details class="picker" #picker (toggle)="expanded.set(picker.open)">
-  <summary>
-    <span class="picker-title">标签筛选</span>
-    <span class="picker-caption">{{ selected().length ? '已选 ' + selected().length + ' 个' : '选择标签' }}</span>
-    <svg class="chevron" aria-hidden="true"><use href="icons.svg#chevron" /></svg>
-  </summary>
+<div class="tag-controls">
+  <div class="picker" #picker (focusout)="closeOnBlur($event, picker)">
+    <div class="tag-field">
+      <svg class="search-icon" aria-hidden="true"><use href="icons.svg#search" /></svg>
 
-  @if (expanded()) {
-    <div class="picker-body">
-      <div class="tag-controls">
-        @if (state() === 'ready' && tags().length) {
-          <label class="tag-search">
-            <svg aria-hidden="true"><use href="icons.svg#search" /></svg>
-            <input #searchInput type="search" aria-label="搜索标签" placeholder="搜索标签名称"
-              [value]="query()" (input)="query.set(searchInput.value); tagList.scrollTop = 0" />
-          </label>
-        }
-        <div class="match" role="radiogroup" aria-label="标签匹配方式">
-          <label>
-            <input type="radio" name="tag-match" [checked]="mode() === 'any'" (change)="modeChanged.emit('any')" />
-            <span>任一匹配</span>
-          </label>
-          <label>
-            <input type="radio" name="tag-match" [checked]="mode() === 'all'" (change)="modeChanged.emit('all')" />
-            <span>全部匹配</span>
-          </label>
-        </div>
-      </div>
+      @if (selected().length) {
+        <ul class="selected-tags" aria-label="已选标签">
+          @for (name of selected(); track name) {
+            <li>
+              <button type="button" class="chip" [attr.aria-label]="'移除标签 ' + name"
+                [title]="name" (click)="field.focus(); toggled.emit(name)">
+                <span>{{ name }}</span>
+                <svg aria-hidden="true"><use href="icons.svg#close" /></svg>
+              </button>
+            </li>
+          }
+        </ul>
+      }
 
-      <div class="tag-results" #tagList>
+      <input #field class="query" type="text" role="combobox" aria-label="标签筛选"
+        aria-autocomplete="list" autocomplete="off"
+        [placeholder]="selected().length ? '搜索标签' : '输入标签，回车添加'"
+        [value]="query()"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-controls]="expanded() ? 'tag-suggestions' : null"
+        [attr.aria-activedescendant]="expanded() && suggestions()[activeIndex()] ? 'tag-option-' + activeIndex() : null"
+        (focus)="expanded.set(true)" (click)="expanded.set(true)"
+        (input)="updateQuery(field.value)" (keydown)="handleKey($event, field)" />
+
+      @if (selected().length) {
+        <button type="button" class="clear" aria-label="清除已选标签" title="清除已选标签"
+          (click)="field.focus(); cleared.emit()">
+          <svg aria-hidden="true"><use href="icons.svg#close" /></svg>
+        </button>
+      }
+    </div>
+
+    @if (expanded()) {
+      <div class="suggestions">
+        <ul #suggestionList class="suggestion-list" id="tag-suggestions" role="listbox" aria-label="候选标签">
+          @for (tag of suggestions(); track tag.name) {
+            <li role="option" [id]="'tag-option-' + $index" [attr.aria-selected]="$index === activeIndex()"
+              (mousedown)="$event.preventDefault()" (click)="chooseTag(tag.name, field)">
+              <span>{{ tag.name }}</span>
+              <small>{{ tag.question_count }} 题</small>
+            </li>
+          }
+        </ul>
+
         @if (state() === 'loading') {
           <p class="hint" role="status">正在加载标签…</p>
         } @else if (state() === 'error') {
-          <p class="hint" role="status">
-            无法加载标签。 <button type="button" class="clear" (click)="retry.emit()">重试</button>
-          </p>
-        } @else if (visibleTags().length) {
-          <ul class="tag-list" aria-label="可选标签">
-            @for (tag of visibleTags(); track tag.name) {
-              <li>
-                <label class="tag">
-                  <input type="checkbox" [checked]="selected().includes(tag.name)" (change)="toggled.emit(tag.name)" />
-                  <span>{{ tag.name }}</span>
-                  <small aria-hidden="true">{{ tag.question_count }}</small>
-                </label>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="hint" role="status">{{ tags().length ? '没有匹配的标签' : '暂无标签' }}</p>
+          <div class="hint">
+            <span role="status">无法加载标签。</span>
+            <button class="retry" type="button" (click)="field.focus(); retry.emit()">重试</button>
+          </div>
+        } @else if (!suggestions().length) {
+          <p class="hint" role="status">{{ tags().length ? '没有匹配的未选标签' : '暂无标签' }}</p>
         }
       </div>
-    </div>
-  }
-</details>
-
-@if (selected().length) {
-  <div class="selection">
-    <ul class="selected-tags" aria-label="已选标签">
-      @for (name of selected(); track name) {
-        <li>
-          <button type="button" class="chip" [attr.aria-label]="'移除标签 ' + name" (click)="toggled.emit(name)">
-            <span>{{ name }}</span>
-            <svg aria-hidden="true"><use href="icons.svg#close" /></svg>
-          </button>
-        </li>
-      }
-    </ul>
-    <button type="button" class="clear" (click)="cleared.emit()">清除已选</button>
+    }
   </div>
-}
+
+  <div class="match" role="radiogroup" aria-label="标签匹配方式">
+    <label title="全部匹配">
+      <input type="radio" name="tag-match" aria-label="AND，全部匹配"
+        [checked]="mode() === 'all'" (change)="modeChanged.emit('all')" />
+      <span>AND</span>
+    </label>
+    <label title="任一匹配">
+      <input type="radio" name="tag-match" aria-label="OR，任一匹配"
+        [checked]="mode() === 'any'" (change)="modeChanged.emit('any')" />
+      <span>OR</span>
+    </label>
+  </div>
+</div>
