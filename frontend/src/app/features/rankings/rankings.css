@@ -7,6 +7,7 @@
   color: #fff;
 }
 h1 { margin: 0; font-size: clamp(26px, 5vw, 42px); letter-spacing: -.035em; }
+.intro { margin: 8px 0 0; color: #e2d9ef; font-size: 14px; line-height: 1.65; }
 
 .controls {
   display: grid;

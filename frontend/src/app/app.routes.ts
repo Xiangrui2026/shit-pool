@@ -4,7 +4,12 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    title: 'SHIT-Pool 石库',
+    title: 'SHIT-POOL 石库',
+    loadComponent: () => import('./features/rankings/rankings').then((module) => module.Rankings),
+  },
+  {
+    path: 'search',
+    title: '查石 · SHIT-POOL 石库',
     loadComponent: () => import('./features/question-search/question-search').then((module) => module.QuestionSearch),
   },
   {
@@ -12,11 +17,7 @@ export const routes: Routes = [
     title: '套题 · SHIT-Pool 石库',
     loadComponent: () => import('./features/papers/paper-browser').then((module) => module.PaperBrowser),
   },
-  {
-    path: 'rankings',
-    title: 'SHIT 排行榜 · SHIT-Pool 石库',
-    loadComponent: () => import('./features/rankings/rankings').then((module) => module.Rankings),
-  },
+  { path: 'rankings', pathMatch: 'full', redirectTo: '' },
   {
     path: 'compose',
     title: '本地组卷 · SHIT-Pool 石库',

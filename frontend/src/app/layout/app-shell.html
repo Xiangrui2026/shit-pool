@@ -1,14 +1,14 @@
 <a class="skip-link" href="#main-content" (click)="skip($event, main)">跳至主要内容</a>
 <header class="masthead">
   <div class="masthead-inner">
-    <a class="brand" routerLink="/" aria-label="SHIT-Pool 石库首页">
+    <a class="brand" routerLink="/" aria-label="石库SHIT-POOL 首页">
       <img src="mark.svg" width="38" height="38" alt="" />
-      <span><strong>SHIT-Pool 石库</strong><small>SHIT BANK</small></span>
+      <span><strong>石库SHIT-POOL</strong><small>综合性题库</small></span>
     </a>
     <nav class="masthead-nav" aria-label="主导航">
-      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">题库检索</a>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">首页</a>
+      <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">查石</a>
       <a routerLink="/papers" routerLinkActive="active" ariaCurrentWhenActive="page">套题</a>
-      <a routerLink="/rankings" routerLinkActive="active" ariaCurrentWhenActive="page">排行榜</a>
       <a routerLink="/compose" routerLinkActive="active" ariaCurrentWhenActive="page">组卷</a>
       <a routerLink="/feedback" routerLinkActive="active" ariaCurrentWhenActive="page">反馈</a>
       <a routerLink="/about" routerLinkActive="active" ariaCurrentWhenActive="page">关于</a>
