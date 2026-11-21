@@ -1,34 +1,71 @@
-<fieldset class="tag-panel">
-  <legend>标签筛选 <span class="multi-label">多选</span></legend>
-  <div class="tag-controls">
-    <div class="match" role="radiogroup" aria-label="标签匹配方式">
-      <label>
-        <input type="radio" name="tag-match" [checked]="mode() === 'any'" (change)="modeChanged.emit('any')" />
-        <span>任一匹配 <small>OR</small></span>
-      </label>
-      <label>
-        <input type="radio" name="tag-match" [checked]="mode() === 'all'" (change)="modeChanged.emit('all')" />
-        <span>全部匹配 <small>AND</small></span>
-      </label>
-    </div>
-    @if (selected().length) {
-      <button class="clear" type="button" (click)="cleared.emit()">清除已选（{{ selected().length }}）</button>
-    }
-  </div>
-  @if (state() === 'loading') {
-    <p class="hint" role="status">正在加载标签…</p>
-  } @else if (state() === 'error') {
-    <p class="hint" role="status">无法加载标签。 <button type="button" class="clear" (click)="retry.emit()">重试</button></p>
-  } @else if (!tags().length) {
-    <p class="hint">暂无标签</p>
-  } @else {
-    <div class="tag-list">
-      @for (tag of tags(); track tag.name) {
-        <label class="tag">
-          <input type="checkbox" [checked]="selected().includes(tag.name)" (change)="toggled.emit(tag.name)" />
-          <span>{{ tag.name }} <small aria-hidden="true">{{ tag.question_count }}</small></span>
-        </label>
-      }
+<details class="picker" #picker (toggle)="expanded.set(picker.open)">
+  <summary>
+    <span class="picker-title">标签筛选</span>
+    <span class="picker-caption">{{ selected().length ? '已选 ' + selected().length + ' 个' : '选择标签' }}</span>
+    <svg class="chevron" aria-hidden="true"><use href="icons.svg#chevron" /></svg>
+  </summary>
+
+  @if (expanded()) {
+    <div class="picker-body">
+      <div class="tag-controls">
+        @if (state() === 'ready' && tags().length) {
+          <label class="tag-search">
+            <svg aria-hidden="true"><use href="icons.svg#search" /></svg>
+            <input #searchInput type="search" aria-label="搜索标签" placeholder="搜索标签名称"
+              [value]="query()" (input)="query.set(searchInput.value); tagList.scrollTop = 0" />
+          </label>
+        }
+        <div class="match" role="radiogroup" aria-label="标签匹配方式">
+          <label>
+            <input type="radio" name="tag-match" [checked]="mode() === 'any'" (change)="modeChanged.emit('any')" />
+            <span>任一匹配</span>
+          </label>
+          <label>
+            <input type="radio" name="tag-match" [checked]="mode() === 'all'" (change)="modeChanged.emit('all')" />
+            <span>全部匹配</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="tag-results" #tagList>
+        @if (state() === 'loading') {
+          <p class="hint" role="status">正在加载标签…</p>
+        } @else if (state() === 'error') {
+          <p class="hint" role="status">
+            无法加载标签。 <button type="button" class="clear" (click)="retry.emit()">重试</button>
+          </p>
+        } @else if (visibleTags().length) {
+          <ul class="tag-list" aria-label="可选标签">
+            @for (tag of visibleTags(); track tag.name) {
+              <li>
+                <label class="tag">
+                  <input type="checkbox" [checked]="selected().includes(tag.name)" (change)="toggled.emit(tag.name)" />
+                  <span>{{ tag.name }}</span>
+                  <small aria-hidden="true">{{ tag.question_count }}</small>
+                </label>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="hint" role="status">{{ tags().length ? '没有匹配的标签' : '暂无标签' }}</p>
+        }
+      </div>
     </div>
   }
-</fieldset>
+</details>
+
+@if (selected().length) {
+  <div class="selection">
+    <ul class="selected-tags" aria-label="已选标签">
+      @for (name of selected(); track name) {
+        <li>
+          <button type="button" class="chip" [attr.aria-label]="'移除标签 ' + name" (click)="toggled.emit(name)">
+            <span>{{ name }}</span>
+            <svg aria-hidden="true"><use href="icons.svg#close" /></svg>
+          </button>
+        </li>
+      }
+    </ul>
+    <button type="button" class="clear" (click)="cleared.emit()">清除已选</button>
+  </div>
+}

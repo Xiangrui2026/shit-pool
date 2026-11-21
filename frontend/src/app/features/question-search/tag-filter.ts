@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 
 import { Tag, TagMatch } from '../../core/api/questions-api';
 
@@ -16,4 +16,12 @@ export class TagFilter {
   readonly modeChanged = output<TagMatch>();
   readonly cleared = output<void>();
   readonly retry = output<void>();
+
+  protected readonly expanded = signal(false);
+  protected readonly query = signal('');
+  protected readonly visibleTags = computed(() => {
+    const query = this.query().trim().toLowerCase();
+    const tags = this.tags();
+    return query ? tags.filter((tag) => tag.name.toLowerCase().includes(query)) : tags;
+  });
 }
